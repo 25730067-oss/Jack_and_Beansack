@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>셀레스티얼: 추락한 에이스 (Celestial: Fallen Ace)</title>
+    <style>
+        :root {
+            --bg-darker: #080a0f;
+            --bg-dark: #10141e;
+            --bg-panel: #1a2233;
+            --primary: #00e5ff;
+            --primary-glow: rgba(0, 229, 255, 0.4);
+            --accent: #ff0055;
+            --accent-glow: rgba(255, 0, 85, 0.4);
+            --gold: #ffd700;
+            --gold-glow: rgba(255, 215, 0, 0.4);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-darker);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 메인 게임 컨테이너 */
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            max-height: 800px;
+            background-color: var(--bg-dark);
+            border: 1px solid #2d3748;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        @media (min-width: 1200px) {
+            #game-container {
+                border-radius: 12px;
+                height: 90vh;
+            }
+        }
+
+        /* 상단 상태바 */
+        #status-bar {
+            height: 60px;
+            background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-dark) 100%);
+            border-bottom: 2px solid #2d3748;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 10;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid #34415a;
+            transition: all 0.3s ease;
+        }
+
+        .stat-item.pulse-yellow {
+            animation: statChangePulseY 0.5s ease-in-out infinite alternate;
+        }
+        .stat-item.pulse-red {
+            animation: statChangePulseR 0.5s ease-in-out infinite alternate;
+        }
+
+        #stat-h { color: #ff4d4d; text-shadow: 0 0 8px rgba(255,77,77,0.3); }
+        #stat-c { color: var(--primary); text-shadow: 0 0 8px var(--primary-glow); }
+        #stat-money { color: var(--gold); text-shadow: 0 0 8px var(--gold-glow); }
+
+        /* 메인 뷰어 영역 */
+        #main-viewer {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            transition: background 1s ease;
+        }
+
+        /* ------------------------------------------------------------- */
+        /* [수정] 환경 배경 이미지 정의 (기존 그래디언트에서 실제 이미지 경로로 수정) */
+        /* ------------------------------------------------------------- */
+        .bg-celestial-panoramic { background-image: url('scene/S1.png'); background-size: cover; background-position: center; }
+        .bg-celestial-corridor { background-image: url('scene/S1.png'); background-size: cover; background-position: center; border-top: 4px solid var(--accent); }
+        .bg-abyss-zero-fall { background-image: url('scene/S2.png'); background-size: cover; background-position: center; }
+        .bg-blurry-memory { background-image: url('scene/S2.png'); background-size: cover; background-position: center; filter: blur(2px); }
+        .bg-celestial-past { background-image: url('scene/S1_2.png'); background-size: cover; background-position: center; }
+        .bg-abyss-zero-view { background-image: url('scene/S3.png'); background-size: cover; background-position: center; }
+        .bg-waste-disposal { background-image: url('scene/S3.png'); background-size: cover; background-position: center; }
+        .bg-old-control-zoom { background-image: url('scene/S3.png'); background-size: cover; background-position: center; }
+        .bg-merchant-house { background-image: url('scene/S4_1.png'); background-size: cover; background-position: center; }
+        .bg-middle-street { background-image: url('scene/S4_2.png'); background-size: cover; background-position: center; }
+        .bg-credit-checkpoint { background-image: url('scene/S5.png'); background-size: cover; background-position: center; }
+        .bg-citizen-arrest { background-image: url('scene/S5.png'); background-size: cover; background-position: center; }
+        .bg-middle-datacenter { background-image: url('scene/S6.png'); background-size: cover; background-position: center; }
+        .bg-elevator-inside { background-image: url('scene/S6.png'); background-size: cover; background-position: center; }
+        .bg-celestial-entrance { background-image: url('scene/S7.png'); background-size: cover; background-position: center; }
+        .bg-celestial-inside { background-image: url('scene/S9.png'); background-size: cover; background-position: center; } /* 기본 매칭 */
+        .bg-celestial-seats { background-image: url('scene/S11_A.png'); background-size: cover; background-position: center; }
+        .bg-new-celestial { background-image: url('scene/S11_B.png'); background-size: cover; background-position: center; }
+        .bg-black-bg { background: #000000; }
+
+        /* 캐릭터 연출 영역 */
+        #character-area {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 55%;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .character-sprite {
+            width: 160px;
+            height: 240px;
+            background: rgba(255,255,255,0.1);
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.4s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .character-sprite.active {
+            opacity: 1;
+            transform: translateY(0);
+            background: rgba(16, 20, 30, 0.75);
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .character-sprite.opponent {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .character-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #2d3748;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .character-name-label {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.4);
+            padding: 4px 12px;
+            border-radius: 4px;
+        }
+
+        /* 하단 인터랙션 플랫폼 영역 */
+        #interaction-platform {
+            position: relative;
+            width: 100%;
+            background: linear-gradient(0deg, rgba(8,10,15,0.95) 0%, rgba(16,20,30,0.85) 100%);
+            border-top: 1px solid #2d3748;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 5;
+        }
+
+        /* 텍스트 박스 */
+        #textbox {
+            width: 100%;
+            min-height: 110px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #34415a;
+            border-radius: 6px;
+            padding: 15px 20px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        #speaker-tag {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: inline-block;
+            letter-spacing: 0.05em;
+        }
+
+        #dialog-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            word-break: keep-all;
+        }
+
+        #click-prompt {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            animation: pulse 1s infinite alternate;
+            display: none;
+        }
+
+        /* 선택지 컨테이너 */
+        #choice-container {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .choice-btn {
+            background: var(--bg-panel);
+            border: 1px solid #4a5568;
+            border-radius: 6px;
+            padding: 12px 20px;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .choice-btn:hover {
+            background: rgba(0, 229, 255, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+            transform: translateX(4px);
+        }
+
+        /* 미니게임 전용 UI 구성 */
+        #minigame-wrapper {
+            display: none;
+            background: rgba(16, 20, 30, 0.9);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 20px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .minigame-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .input-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .minigame-input {
+            background: #000;
+            border: 1px solid #4a5568;
+            border-radius: 4px;
+            padding: 10px;
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 0.2em;
+            width: 120px;
+            font-weight: bold;
+        }
+
+        .minigame-submit {
+            background: var(--primary);
+            border: none;
+            border-radius: 4px;
+            padding: 0 20px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* 화면 이펙트 레이어들 */
+        .fx-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 8;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #fx-red { background: rgba(255, 0, 0, 0.3); }
+        #fx-dark { background: rgba(0, 0, 0, 0.75); }
+        #fx-gold { background: radial-gradient(circle, rgba(255,215,0,0.2) 0%, rgba(0,0,0,0) 70%); }
+        #fx-spark { background: repeating-linear-gradient(0deg, rgba(0,229,255,0.05), rgba(0,229,255,0.05) 1px, transparent 1px, transparent 2px); }
+
+        /* 게임오버 / 엔딩 전용 화면 전면 오버레이 */
+        #screen-blocker {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 20;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #blocker-title {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--accent);
+            margin-bottom: 20px;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        #blocker-desc {
+            font-size: 1.2rem;
+            color: var(--text-main);
+            margin-bottom: 30px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        /* 애니메이션 선언부 */
+        @keyframes pulse { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+        
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -3px); }
+            20%, 40%, 60%, 80% { transform: translate(5px, 3px); }
+        }
+        .anim-shake { animation: shake 0.4s ease-in-out; }
+
+        @keyframes redSiren {
+            0% { background: rgba(255,0,0,0); }
+            50% { background: rgba(255,0,0,0.4); }
+            100% { background: rgba(255,0,0,0); }
+        }
+        .anim-siren { animation: redSiren 1s ease-in-out infinite; }
+
+        @keyframes goldGlowLoop {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        .anim-gold-flow { animation: goldGlowLoop 1.5s ease-in-out infinite alternate; }
+
+        @keyframes flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+            20%, 24%, 55% { opacity: 0.3; }
+        }
+        .anim-flicker { animation: flicker 0.8s infinite; }
+
+        @keyframes heartPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        .anim-pulse-box { animation: heartPulse 0.8s infinite ease-in-out; }
+
+        @keyframes statChangePulseY {
+            0% { background: rgba(0,0,0,0.3); border-color: #34415a; }
+            100% { background: rgba(255,215,0,0.2); border-color: var(--gold); }
+        }
+        @keyframes statChangePulseR {
+            0% { background: rgba(0,0,0,0.3); border-color: #34415a; }
+            100% { background: rgba(255,77,77,0.2); border-color: #ff4d4d; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="status-bar">
+            <div class="stat-item" id="stat-container-h">인간성/체력($H): <span id="stat-h">100</span></div>
+            <div class="stat-item" id="stat-container-c">신용 등급($C): <span id="stat-c">0</span></div>
+            <div class="stat-item" id="stat-container-money">보유 자산: <span id="stat-money">0</span>전</div>
+        </div>
+
+        <div id="main-viewer" class="bg-black-bg">
+            <video id="bg-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: none; pointer-events: none; z-index: 0;" muted playsinline></video>
+
+            <div id="fx-red" class="fx-overlay"></div>
+            <div id="fx-dark" class="fx-overlay"></div>
+            <div id="fx-gold" class="fx-overlay"></div>
+            <div id="fx-spark" class="fx-overlay"></div>
+
+            <div id="character-area">
+                <div id="sprite-jack" class="character-sprite">
+                    <div class="character-avatar" style="color: var(--primary);">J</div>
+                    <div class="character-name-label">잭</div>
+                </div>
+                <div id="sprite-opponent" class="character-sprite opponent">
+                    <div class="character-avatar" id="opp-avatar" style="color: var(--accent);">?</div>
+                    <div class="character-name-label" id="opp-name">상대방</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="interaction-platform">
+            <div id="textbox">
+                <div id="speaker-tag">나레이션</div>
+                <div id="dialog-text">게임 시스템 초기화 중...</div>
+                <div id="click-prompt">▼ 클릭하여 계속</div>
+            </div>
+
+            <div id="choice-container"></div>
+
+            <div id="minigame-wrapper">
+                <div class="minigame-title" id="minigame-title">미니게임 모듈</div>
+                <div id="minigame-body" style="font-size: 1rem; color: var(--text-main);"></div>
+                <div class="input-row" id="minigame-input-row" style="display:none;">
+                    <input type="text" id="mg-input" class="minigame-input" autocomplete="off">
+                    <button id="mg-submit" class="minigame-submit">검증</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-blocker">
+            <div id="blocker-title">DEATH</div>
+            <div id="blocker-desc">설명이 들어갑니다.</div>
+            <button class="choice-btn" id="blocker-btn" style="text-align:center; align-self:center;">작동 재개</button>
+        </div>
+    </div>
+
+    <script>
+        // 전역 게임 코어 상태 제어 구조체
+        const gameState = {
+            H: 100,
+            C: 0,
+            money: 0,
+            currentScene: "S1",
+            currentLineIndex: 0,
+            textTypingTimer: null,
+            isTyping: false,
+            currentLineText: "",
+            
+            // 미니게임 내부 메모리 세션 변수
+            s3Step: 1,
+            s3GeneratedCode: "",
+            s8Step: 1,
+            s8ManipulationRate: 0
+        };
+
+        // 데이터 시나리오 매트릭스 백엔드 배열화 구조 선언
+        const storyData = {
+            S1: {
+                title: "추락: 에이스의 말로",
+                lines: [
+                    { speaker: "나레이션", text: "찬란한 하늘의 초호화 도시 '셀레스티얼'", bg: "bg-celestial-panoramic" },
+                    { speaker: "커스터디언", text: "놓치면 안된다 잡아라!! 1, 4분대 아래층에서 대기! 3분대는 반대로 돌아서 몰아라! 2분대는 나를 따라 상급 관리자 ‘잭’을 뒤쫓는다!", bg: "bg-celestial-corridor", effect: "shake", delayBefore: 2000 },
+                    { speaker: "잭", text: "이게 도대체 무슨 일인가..", bg: "bg-celestial-corridor" },
+                    { speaker: "커스터디언", text: "중앙 데이터 탈취범 ‘잭’ 생포 완료. 신용 등급 말소 및 셀레스티얼 추방을 진행합니다.", bg: "bg-celestial-corridor" },
+                    { 
+                        type: "choice",
+                        bg: "bg-celestial-corridor",
+                        choices:
