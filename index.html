@@ -105,4 +105,415 @@
         .input-group button { background: var(--neon-yellow); color: #000; border: none; padding: 0 20px; font-weight: bold; cursor: pointer; }
 
         /* 씬 전환막 */
-        #transition-
+        #transition-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 300; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        #transition-screen h1 { font-family: 'Nanum Myeongjo', serif; font-size: 3rem; color: #fff; margin: 0; }
+        #transition-screen p { color: var(--neon-yellow); font-size: 1.2rem; margin-top: 15px; }
+
+        .shake { animation: shakeAnim 0.4s; }
+        @keyframes shakeAnim { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(3px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+    </style>
+</head>
+<body>
+
+    <div id="title-screen" onclick="showGuide(event)">
+        <h1>잭과 콩나무 - 어비스 제로</h1>
+        <div class="author">25730067 송태영</div>
+        <div class="tap-start">클릭(탭)하여 시작하세요</div>
+    </div>
+
+    <div id="guide-screen" onclick="startGame(event)">
+        <div class="guide-box">
+            <h2>조작법 안내</h2>
+            <div class="guide-item"><b>[Space / Enter / Click]</b> 대사 넘기기</div>
+            <div class="guide-item"><b>[Tab]</b> 좌측 상태창 열기/닫기</div>
+            <div class="guide-item" style="color: var(--neon-yellow); margin-top: 30px; font-size: 0.9rem;">화면을 클릭하면 시작됩니다.</div>
+        </div>
+    </div>
+
+    <div id="bg-layer"></div>
+    <video id="bg-video" loop muted playsinline></video>
+
+    <div id="status-window">
+        <h2>상태창</h2>
+        <div class="stat-line"><span>신용 점수(C)</span> <b id="stat-c">95</b></div>
+        <div class="stat-line"><span>인간성(H)</span> <b id="stat-h">70</b></div>
+        <div class="stat-line"><span>동기화율(S)</span> <b id="stat-s">80</b></div>
+        <div class="stat-line"><span>산소 농도(O)</span> <b id="stat-o">100%</b></div>
+    </div>
+
+    <div id="choices-container"></div>
+    <div id="dialogue-layer">
+        <div id="speaker-name"></div>
+        <div id="dialogue-text"></div>
+    </div>
+
+    <div id="transition-screen">
+        <h1 id="ts-num"></h1>
+        <p id="ts-name"></p>
+    </div>
+
+<script>
+    let state = { C: 95, H: 70, S: 80, O: 100, money: 0, manipulation: 0 };
+    let curScene = null;
+    let curIdx = 0;
+    let isTyping = false;
+    let typeInterval = null;
+
+    // [★완벽 반영] 제공해주신 정확한 폴더 구조 및 파일명 맵
+    const bgMap = {
+        "0": "background/셀레스티얼_복도.png",
+        "S1": "scene/S1.png",
+        "S1_2": "scene/S1_2.png",
+        "S2": "scene/S2.png",
+        "S3": "scene/S3.png",
+        "S4_1": "scene/S4_1.png",
+        "S4_2": "scene/S4_2.png",
+        "S5_0": "background/중층부_거리.png",
+        "S5": "scene/S5.png",
+        "S6": "scene/S6.png", 
+        "S6_0": "background/셀레스티얼_입구.png", 
+        "S7": "scene/S7.png",
+        "S8": "video/S8.mp4", // MP4 비디오 파일 예외 제어 포함됨
+        "S9": "scene/S9.png",
+        "S10": "scene/S10.png",
+        "S11_A": "scene/S11_A.png",
+        "S11_B": "scene/S11_B.png",
+        "검은화면": ""
+    };
+
+    // 주신 리스트의 흐름(S1 ~ S11)에 대응하도록 시나리오 구조 최적화
+    const scenes = {
+        "S1": {
+            num: "#S1", name: "추락: 에이스의 말로",
+            seq: [
+                { speaker: "나레이션", text: "찬란한 하늘의 초호화 도시 '셀레스티얼'", bg: "0" },
+                { speaker: "커스터디언", text: "놓치면 안된다 잡아라!! 상급 관리자 ‘잭’을 뒤쫓는다!", bg: "S1", effect: "shake" },
+                { speaker: "잭", text: "이게 도대체 무슨 일인가..", bg: "S1_2" },
+                { speaker: "커스터디언", text: "잭 생포 완료. 신용 등급 말소 및 셀레스티얼 추방을 진행합니다." },
+            ],
+            choices: [
+                { text: "이거 왜 이러십니까! 저는 아무것도 하지 않았습니다!", effect: {H: 5}, next: "S1_END" },
+                { text: "(격하게 발버둥을 치며 저항한다)", effect: {H: -10}, next: "S1_END" }
+            ]
+        },
+        "S1_END": { seq: [{ speaker: "나레이션", text: "모든 죄가 밝혀졌다며 강제로 제압당한다. 시스템: 추락을 시작합니다.", setC: 0, bg: "검은화면" }], nextAuto: "S2" },
+
+        "S2": {
+            num: "#S2", name: "최하층: 질식의 거리",
+            seq: [
+                { speaker: "나레이션", text: "빛조차 닿지 않는 최하층, ‘어비스 제로’.", bg: "S2", setO: 30 },
+                { speaker: "잭", text: "(거친 숨소리) ..목이.. 숨을 못 쉬겠어..", effect: "shake" },
+                { speaker: "나레이션", text: "잭은 쓰레기 더미 속에서 낡은 중앙 제어 장치를 발견한다." },
+                { speaker: "잭", text: "(떨리는 손으로) …이걸… 고치면… 살 수 있다…" }
+            ],
+            choices: [
+                { text: "붉은 케이블 연결", next: "S2_FAIL" },
+                { text: "푸른 케이블 연결", next: "S2_M2" }
+            ]
+        },
+        "S2_FAIL": { seq: [{ speaker: "시스템", text: "전류 과부하. 처음으로 돌아갑니다." }], nextAuto: "S2" },
+        "S2_M2": {
+            seq: [{ speaker: "시스템", text: "회로 안정화. 다음 단계를 진행하십시오." }],
+            choices: [
+                { text: "시계 방향 회전", next: "S2_FAIL" },
+                { text: "반시계 방향 회전", next: "S2_M3" }
+            ]
+        },
+        "S2_M3": { seq: [{ speaker: "시스템", text: "무작위 코드를 입력하십시오." }], minigame: "PIN", nextSuccess: "S3", nextFail: "S2" },
+
+        "S3": {
+            num: "#S3", name: "조력자: 뜻밖의 조우",
+            seq: [
+                { speaker: "나레이션", text: "잭은 어느 따뜻하고 포근한 방 안에서 눈을 떴다.", bg: "S3", setO: 100 },
+                { speaker: "상인", text: "물 좀 마셔. 내가 자네를 발견했네." }
+            ],
+            choices: [
+                { text: "왜 저를 살려주신 겁니까?", effect: {H: 5, C: 10}, next: "S3_MID" },
+                { text: "꿍꿍이가 대체 뭔가!", effect: {H: -10}, next: "S3_MID" }
+            ]
+        },
+        "S3_MID": {
+            seq: [
+                { speaker: "상인", text: "팀의 핵심 브레인 ‘스카이’를 소개하지." },
+                { speaker: "스카이", text: "잭, 당신을 상층부로 보내주겠어. (불법 플러그인 이식)", effect: "syncUp" },
+                { speaker: "상인", text: "여기까지가 최선이야. 꼭 성공하게. (20만전 획득)", setC_add: -10 }
+            ], nextAuto: "S4"
+        },
+
+        "S4": {
+            num: "#S4", name: "상승: 유리 엘레베이터",
+            seq: [
+                { speaker: "나레이션", text: "우주 엘리베이터를 강제 작동시킨다.", bg: "S4_1", setC_add: -20 },
+                { speaker: "잭", text: "…올라간다…", bg: "S4_2", effect: "shake" }
+            ], nextAuto: "S5"
+        },
+
+        "S5": {
+            num: "#S5", name: "잠입: 낯선 고향의 초상",
+            seq: [{ speaker: "나레이션", text: "고향 셀레스티얼의 중층부가 눈앞에 펼쳐진다.", bg: "S5_0" },
+                  { speaker: "나레이션", text: "경비 시스템이 다가온다.", bg: "S5" }],
+            dynamic: "S5_CHECK"
+        },
+        "S5_PASS": { seq: [{ speaker: "커스터디언", text: "안녕하십니까, 환영합니다." }], nextAuto: "S6" },
+        "S5_BLOCK": {
+            seq: [{ speaker: "커스터디언", text: "신용 미달자. 출입 금지." }, { speaker: "커스터디언A", text: "잭? 네가 맞지? 몰래 들어갈 방법을 알려주지." }],
+            choices: [
+                { text: "부디 알려주게", effect: {H: 5, C: -20}, next: "S6" },
+                { text: "도움은 필요없네", effect: {H: -10, C: -20}, next: "S6" }
+            ]
+        },
+
+        "S6": {
+            num: "#S6", name: "중앙 서버: 낙원의 실태",
+            seq: [
+                { speaker: "나레이션", text: "셀레스티얼 입구를 거쳐 내부 진입을 시작한다.", bg: "S6_0" },
+                { speaker: "나레이션", text: "잭은 ‘골드 디거’의 추악한 진실을 목격한다.", bg: "S6" },
+                { speaker: "잭", text: "이게 이사회의 민낯이로구나… 진실을 폭로하겠다." },
+            ], nextAuto: "S6_M1"
+        },
+        "S6_M1": {
+            seq: [{ speaker: "시스템", text: "[데이터 정리 1단계]" }],
+            choices: [ { text: "신용 기록 정리 (+30)", effect: {M: 30}, next: "S6_M2" }, { text: "무작위 정리 (+10)", effect: {M: 10}, next: "S6_M2" } ]
+        },
+        "S6_M2": {
+            seq: [{ speaker: "시스템", text: "[데이터 정리 2단계]" }],
+            choices: [ { text: "정석 해제 (+40)", effect: {M: 40}, next: "S6_EVAL" }, { text: "일부 해제 포기 (+10)", effect: {M: 10}, next: "S6_EVAL" } ]
+        },
+        "S6_EVAL": { dynamic: "S6_EVAL_LOGIC" },
+
+        "S7": {
+            num: "#S7", name: "거인의 분노: 이사회의 추격",
+            seq: [
+                { speaker: "커스터디언", text: "목표 대상 ‘잭’ 포위 완료. 사살하라!", bg: "S7", effect: "shake" },
+                { speaker: "잭", text: "살기 위해선.. '골드 디거'를 써야만 하는가?" }
+            ],
+            choices: [
+                { text: "골드 디거 거부", next: "S7_FAIL" },
+                { text: "골드 디거 사용 (인간성 -30)", effect: {C_set: 90, H: -30}, next: "S8" }
+            ]
+        },
+        "S7_FAIL": { seq: [{ speaker: "나레이션", text: "잭은 사살당했습니다." }], nextAuto: "S7" },
+
+        // 비디오 파일 연출 공간
+        "S8": {
+            num: "#S8", name: "심판의 시간",
+            seq: [
+                { speaker: "시스템", text: "메인 시퀀스 동영상을 재생합니다.", bg: "S8" },
+                { speaker: "나레이션", text: "핵심 데이터가 연동되며 거대한 균열이 시작된다." }
+            ], nextAuto: "S9"
+        },
+
+        "S9": {
+            num: "#S9", name: "붕괴하는 세계",
+            seq: [{ speaker: "이사회", text: "잭, 네가 저지른 짓을 봐라! 모든 게 무너진다!", bg: "S9" }],
+            nextAuto: "S10"
+        },
+
+        "S10": {
+            num: "#S10", name: "갈림길: 이사회의 제안",
+            seq: [{ speaker: "이사회", text: "잭, 우리와 함께 낙원을 재건하고 관리하자.", bg: "S10" }],
+            choices: [
+                { text: "제안 수락 (엔딩 A)", next: "S11_A" },
+                { text: "제안 거절 (엔딩 B)", next: "S11_B", reqH: 50 }
+            ]
+        },
+        "S11_A": { num: "Ending A", name: "낙원의 관리자", seq: [{ speaker: "나레이션", text: "잭은 다시 독재의 일부가 되었습니다.", bg: "S11_A" }], nextAuto: "QUIT" },
+        "S11_B": { num: "Ending B", name: "새로운 재정립", seq: [{ speaker: "나레이션", text: "평등하고 자유로운 새로운 사회가 시작됩니다.", bg: "S11_B" }], nextAuto: "QUIT" }
+    };
+
+    /* 기초 시스템 제어 */
+    function showGuide(e) { 
+        if(e) e.stopPropagation();
+        document.getElementById('title-screen').style.display = 'none'; 
+        document.getElementById('guide-screen').style.display = 'flex'; 
+    }
+    function startGame(e) { 
+        if(e) e.stopPropagation();
+        document.getElementById('guide-screen').style.display = 'none'; 
+        resetState(); 
+        playScene("S1"); 
+    }
+    function resetState() { state = { C: 95, H: 70, S: 80, O: 100, money: 0, manipulation: 0 }; updateHUD(); }
+
+    function playScene(id) {
+        if(id === "QUIT") { setTimeout(() => { location.reload(); }, 1500); return; }
+        curScene = scenes[id]; curIdx = 0;
+        
+        if(curScene.dynamic === "S5_CHECK") return playScene(state.C >= 90 ? "S5_PASS" : "S5_BLOCK");
+        if(curScene.dynamic === "S6_EVAL_LOGIC") {
+            let success = state.manipulation >= 70;
+            let msg = success ? "조작률 70점 이상으로 데이터 정리에 성공했습니다." : "조작률 70점 미만으로 폭록에 실패했습니다.";
+            scenes["S6_R"] = { seq: [{ speaker: "나레이션", text: msg }], nextAuto: success ? "S7" : "S6" };
+            if(!success) state.manipulation = 0;
+            return playScene("S6_R");
+        }
+
+        if(curScene.num) {
+            const ts = document.getElementById('transition-screen');
+            document.getElementById('ts-num').innerText = curScene.num;
+            document.getElementById('ts-name').innerText = curScene.name;
+            ts.style.display = 'flex';
+            setTimeout(() => { ts.style.display = 'none'; renderSequence(); }, 1200);
+        } else {
+            renderSequence();
+        }
+    }
+
+    function renderSequence() {
+        const seq = curScene.seq[curIdx];
+        document.getElementById('choices-container').innerHTML = "";
+        
+        // 배경 설정 및 MP4 동영상 파일 예외 감지 처리
+        if(seq.bg !== undefined) {
+            let fileKey = bgMap[seq.bg];
+            const bgLayer = document.getElementById('bg-layer');
+            const bgVideo = document.getElementById('bg-video');
+
+            if(fileKey && fileKey.endsWith('.mp4')) {
+                // 동영상인 경우
+                bgLayer.style.backgroundImage = 'none';
+                bgVideo.src = fileKey;
+                bgVideo.style.display = 'block';
+                bgVideo.play().catch(err => console.log("비디오 자동재생 제한 확인:", err));
+            } else {
+                // 일반 이미지나 검은화면인 경우
+                bgVideo.style.display = 'none';
+                bgVideo.pause();
+                bgLayer.style.backgroundImage = fileKey ? `url('${fileKey}')` : 'none';
+            }
+        }
+
+        document.body.classList.remove('shake');
+        if(seq.effect === "shake") document.body.classList.add('shake');
+
+        if(seq.setC !== undefined) state.C = seq.setC;
+        if(seq.setC_add !== undefined) state.C += seq.setC_add;
+        if(seq.setO !== undefined) state.O = seq.setO;
+        if(seq.effect === "syncUp") state.S += 15;
+        updateHUD();
+
+        typeText(seq.speaker, seq.text);
+    }
+
+    function typeText(name, text) {
+        isTyping = true;
+        if (name === "나레이션" || name === "시스템") {
+            document.getElementById('speaker-name').style.display = 'none';
+        } else {
+            document.getElementById('speaker-name').style.display = 'block';
+            document.getElementById('speaker-name').innerText = name;
+        }
+
+        const textEl = document.getElementById('dialogue-text');
+        textEl.innerText = "";
+        let i = 0;
+        clearInterval(typeInterval);
+        typeInterval = setInterval(() => {
+            textEl.innerText += text[i]; i++;
+            if(i >= text.length) { 
+                clearInterval(typeInterval); 
+                isTyping = false; 
+                checkPostSequence(); 
+            }
+        }, 30);
+    }
+
+    function handleAdvance() {
+        if(document.getElementById('title-screen').style.display !== 'none' || document.getElementById('guide-screen').style.display !== 'none') return;
+        if(document.getElementById('choices-container').innerHTML !== "") return;
+        
+        if(isTyping) {
+            clearInterval(typeInterval);
+            document.getElementById('dialogue-text').innerText = curScene.seq[curIdx].text;
+            isTyping = false;
+            checkPostSequence();
+            return;
+        }
+
+        if(curIdx < curScene.seq.length - 1) {
+            curIdx++;
+            renderSequence();
+        }
+    }
+
+    function checkPostSequence() {
+        if(curIdx === curScene.seq.length - 1) {
+            if(curScene.minigame === "PIN") showPinGame();
+            else if(curScene.choices) showChoices();
+            else if(curScene.nextAuto) setTimeout(() => playScene(curScene.nextAuto), 1000);
+        }
+    }
+
+    function showChoices() {
+        const box = document.getElementById('choices-container');
+        curScene.choices.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = c.text;
+            if(c.reqH && state.H < c.reqH) { 
+                btn.classList.add('disabled'); 
+                btn.innerText = `[선택 불가] ` + c.text; 
+            } else {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    if(c.effect) {
+                        if(c.effect.H) state.H += c.effect.H;
+                        if(c.effect.C) state.C += c.effect.C;
+                        if(c.effect.C_set) state.C = c.effect.C_set;
+                        if(c.effect.M) state.manipulation += c.effect.M;
+                    }
+                    playScene(c.next);
+                };
+            }
+            box.appendChild(btn);
+        });
+    }
+
+    function showPinGame() {
+        const box = document.getElementById('choices-container');
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        const div = document.createElement('div');
+        div.className = "input-group";
+        div.innerHTML = `<input type="text" id="pin-input" placeholder="코드:${code}"><button>접속</button>`;
+        
+        div.querySelector('input').onclick = (e) => e.stopPropagation();
+        div.querySelector('button').onclick = (e) => {
+            e.stopPropagation();
+            if(document.getElementById('pin-input').value === code) {
+                state.C += 50; playScene(curScene.nextSuccess);
+            } else {
+                playScene(curScene.nextFail);
+            }
+        };
+        box.appendChild(div);
+    }
+
+    function updateHUD() {
+        document.getElementById('stat-c').innerText = state.C;
+        document.getElementById('stat-h').innerText = state.H;
+        document.getElementById('stat-s').innerText = state.S;
+        document.getElementById('stat-o').innerText = state.O + "%";
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if(e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            handleAdvance();
+        }
+        if(e.code === 'Tab') { 
+            e.preventDefault(); 
+            const status = document.getElementById('status-window');
+            status.classList.toggle('open');
+        }
+    });
+
+    document.addEventListener('click', () => {
+        handleAdvance();
+    });
+</script>
+</body>
+</html>
