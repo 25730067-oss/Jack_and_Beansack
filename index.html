@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>잭과 콩나무 - 어비스 제로</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght=700;800&family=Orbitron:wght=400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 
     <style>
         :root {
-            /* 색상: 오직 노란색 네온과 흰색, 검은색 계열만 사용 */
             --neon-yellow: #fff200;
             --text-white: #ffffff;
             --bg-black: #050505;
@@ -29,62 +28,49 @@
             transition: background-image 0.5s ease-in-out; z-index: 1;
         }
 
+        /* 비디오 배경 레이어 (S8 재생용) */
+        #bg-video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 2; display: none;
+        }
+
         /* 타이틀 화면 */
         #title-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('셀레스티얼_신_전경.png');
+            background: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.75)), #111;
             background-size: cover; background-position: center; z-index: 200;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
         }
-        #title-screen h1 { font-family: 'Nanum Myeongjo', serif; font-size: 3.5rem; color: var(--neon-yellow); margin-bottom: 5px; }
+        #title-screen h1 { font-family: 'Nanum Myeongjo', serif; font-size: 3.5rem; color: var(--neon-yellow); margin-bottom: 5px; text-shadow: 0 0 10px rgba(255,242,0,0.5); }
         #title-screen .author { font-size: 1.2rem; color: #ccc; margin-bottom: 50px; }
-        #title-screen .tap-start { font-size: 1.2rem; color: var(--neon-yellow); animation: blink 1.5s infinite; cursor: pointer; font-weight: bold; }
+        #title-screen .tap-start { font-size: 1.2rem; color: var(--neon-yellow); animation: blink 1.5s infinite; font-weight: bold; }
 
         /* 조작법 설명 화면 */
         #guide-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 190;
+            background: rgba(0,0,0,0.95); z-index: 190;
             display: none; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
         }
         .guide-box { border: 1px solid var(--neon-yellow); padding: 40px; background: rgba(0,0,0,0.8); text-align: center; }
-        .guide-box h2 { color: var(--neon-yellow); margin-bottom: 20px; }
+        .guide-box h2 { color: var(--neon-yellow); margin-bottom: 20px; font-family: 'Nanum Myeongjo', serif; }
         .guide-item { margin: 15px 0; font-size: 1.1rem; color: #fff; }
         .guide-item b { color: var(--neon-yellow); }
 
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* 좌측 슬라이드 상태창 (Tab 키) */
+        /* 좌측 슬라이드 상태창 */
         #status-window {
-            position: absolute; top: 0; left: -350px; /* 기본적으로 숨김 */
+            position: absolute; top: 0; left: -350px;
             width: 250px; height: 100%;
             background: rgba(0, 0, 0, 0.95); border-right: 2px solid var(--neon-yellow);
             transition: left 0.3s ease-in-out; z-index: 150; padding: 30px; box-sizing: border-box;
         }
-        #status-window.open { left: 0; /* Tab 누르면 등장 */ }
+        #status-window.open { left: 0; }
         #status-window h2 { font-family: 'Nanum Myeongjo', serif; color: var(--neon-yellow); border-bottom: 1px solid #555; padding-bottom: 10px; }
         .stat-line { display: flex; justify-content: space-between; margin: 20px 0; font-size: 1.1rem; }
         .stat-line b { color: var(--neon-yellow); font-family: 'Orbitron', sans-serif; }
-
-        /* 중앙 캐릭터 레이어 */
-        #char-layer {
-            position: absolute; bottom: 25vh; width: 100%;
-            display: flex; justify-content: center; align-items: flex-end; gap: 20px; z-index: 10;
-        }
-        .char-box {
-            width: 180px; height: 280px; background: rgba(0,0,0,0.6);
-            border: 1px solid #555; display: flex; align-items: flex-end; justify-content: center;
-            padding-bottom: 20px; font-size: 1.2rem; color: #aaa; transition: 0.3s;
-        }
-        .char-box.active {
-            border: 2px solid var(--neon-yellow); color: var(--text-white); font-weight: bold;
-            background: rgba(255, 242, 0, 0.1); box-shadow: 0 0 15px rgba(255, 242, 0, 0.2);
-        }
-
-        /* 구형 제어 장치 오버레이 (S2) */
-        #overlay-asset {
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            width: 400px; display: none; z-index: 15;
-        }
 
         /* 하단 대사창 */
         #dialogue-layer {
@@ -93,15 +79,13 @@
             background: rgba(0, 0, 0, 0.85); border: 1px solid rgba(255, 242, 0, 0.5);
             padding: 30px 50px; box-sizing: border-box; z-index: 100;
         }
-        
-        /* 화자 이름 (대사창 밖 상단으로 배치) */
         #speaker-name {
             position: absolute; top: -20px; left: 30px;
             background: var(--neon-yellow); color: #000;
             font-family: 'Nanum Myeongjo', serif; font-size: 1.2rem; font-weight: 800;
             padding: 5px 20px; box-shadow: 0 0 10px rgba(255, 242, 0, 0.5);
         }
-        #dialogue-text { font-size: 1.2rem; line-height: 1.6; color: var(--text-white); }
+        #dialogue-text { font-size: 1.2rem; line-height: 1.6; color: var(--text-white); white-space: pre-wrap; }
 
         /* 선택지 영역 */
         #choices-container {
@@ -117,4 +101,8 @@
 
         /* 미니게임 입력 */
         .input-group { display: flex; justify-content: center; gap: 10px; }
-        .input-group input { background: #000; border: 1px solid var(--neon-yellow); color: var(--neon-yellow); padding: 10px; text-align: center; font-size: 1.2rem; width: 120px
+        .input-group input { background: #000; border: 1px solid var(--neon-yellow); color: var(--neon-yellow); padding: 10px; text-align: center; font-size: 1.2rem; width: 120px; }
+        .input-group button { background: var(--neon-yellow); color: #000; border: none; padding: 0 20px; font-weight: bold; cursor: pointer; }
+
+        /* 씬 전환막 */
+        #transition-
