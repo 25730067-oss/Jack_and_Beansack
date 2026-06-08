@@ -99,4 +99,22 @@
             position: absolute; top: -20px; left: 30px;
             background: var(--neon-yellow); color: #000;
             font-family: 'Nanum Myeongjo', serif; font-size: 1.2rem; font-weight: 800;
-            padding: 5px 20px
+            padding: 5px 20px; box-shadow: 0 0 10px rgba(255, 242, 0, 0.5);
+        }
+        #dialogue-text { font-size: 1.2rem; line-height: 1.6; color: var(--text-white); }
+
+        /* 선택지 영역 */
+        #choices-container {
+            position: absolute; bottom: 220px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; gap: 10px; z-index: 110; width: 400px;
+        }
+        .choice-btn {
+            background: rgba(0, 0, 0, 0.9); border: 1px solid var(--neon-yellow);
+            color: #fff; padding: 12px; cursor: pointer; transition: 0.2s; font-size: 1.05rem;
+        }
+        .choice-btn:hover { background: var(--neon-yellow); color: #000; font-weight: bold; }
+        .choice-btn.disabled { color: #555; border-color: #333; text-decoration: line-through; pointer-events: none; }
+
+        /* 미니게임 입력 */
+        .input-group { display: flex; justify-content: center; gap: 10px; }
+        .input-group input { background: #000; border: 1px solid var(--neon-yellow); color: var(--neon-yellow); padding: 10px; text-align: center; font-size: 1.2rem; width: 120px
