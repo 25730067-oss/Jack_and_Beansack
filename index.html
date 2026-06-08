@@ -28,7 +28,7 @@
             transition: background-image 0.5s ease-in-out; z-index: 1;
         }
 
-        /* 비디오 배경 레이어 (S8 재생용) */
+        /* 인게임 비디오 배경 레이어 (S8 재생용) */
         #bg-video {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             object-fit: cover; z-index: 2; display: none;
@@ -37,14 +37,18 @@
         /* 타이틀 화면 */
         #title-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.75)), #111;
-            background-size: cover; background-position: center; z-index: 200;
+            background: rgba(0,0,0,0.4); z-index: 200;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer;
+            cursor: pointer; overflow: hidden;
         }
-        #title-screen h1 { font-family: 'Nanum Myeongjo', serif; font-size: 3.5rem; color: var(--neon-yellow); margin-bottom: 5px; text-shadow: 0 0 10px rgba(255,242,0,0.5); }
-        #title-screen .author { font-size: 1.2rem; color: #ccc; margin-bottom: 50px; }
-        #title-screen .tap-start { font-size: 1.2rem; color: var(--neon-yellow); animation: blink 1.5s infinite; font-weight: bold; }
+        /* 타이틀 전용 배경 비디오 (video/Cover.mp4) */
+        #title-video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: -1;
+        }
+        #title-screen h1 { font-family: 'Nanum Myeongjo', serif; font-size: 3.5rem; color: var(--neon-yellow); margin-bottom: 5px; text-shadow: 0 0 15px rgba(255,242,0,0.6); z-index: 1; }
+        #title-screen .author { font-size: 1.2rem; color: #ccc; margin-bottom: 50px; z-index: 1; }
+        #title-screen .tap-start { font-size: 1.2rem; color: var(--neon-yellow); animation: blink 1.5s infinite; font-weight: bold; z-index: 1; }
 
         /* 조작법 설명 화면 */
         #guide-screen {
@@ -120,6 +124,7 @@
 <body>
 
     <div id="title-screen" onclick="showGuide(event)">
+        <video id="title-video" src="video/Cover.mp4" loop muted playsinline autoplay></video>
         <h1>잭과 콩나무 - 어비스 제로</h1>
         <div class="author">25730067 송태영</div>
         <div class="tap-start">클릭(탭)하여 시작하세요</div>
@@ -163,7 +168,6 @@
     let isTyping = false;
     let typeInterval = null;
 
-    // [★완벽 반영] 제공해주신 정확한 폴더 구조 및 파일명 맵
     const bgMap = {
         "0": "background/셀레스티얼_복도.png",
         "S1": "scene/S1.png",
@@ -177,7 +181,7 @@
         "S6": "scene/S6.png", 
         "S6_0": "background/셀레스티얼_입구.png", 
         "S7": "scene/S7.png",
-        "S8": "video/S8.mp4", // MP4 비디오 파일 예외 제어 포함됨
+        "S8": "video/S8.mp4", // [★확인 완료] S8 전용 비디오 정상 연동
         "S9": "scene/S9.png",
         "S10": "scene/S10.png",
         "S11_A": "scene/S11_A.png",
@@ -185,7 +189,6 @@
         "검은화면": ""
     };
 
-    // 주신 리스트의 흐름(S1 ~ S11)에 대응하도록 시나리오 구조 최적화
     const scenes = {
         "S1": {
             num: "#S1", name: "추락: 에이스의 말로",
@@ -298,7 +301,6 @@
         },
         "S7_FAIL": { seq: [{ speaker: "나레이션", text: "잭은 사살당했습니다." }], nextAuto: "S7" },
 
-        // 비디오 파일 연출 공간
         "S8": {
             num: "#S8", name: "심판의 시간",
             seq: [
@@ -325,9 +327,10 @@
         "S11_B": { num: "Ending B", name: "새로운 재정립", seq: [{ speaker: "나레이션", text: "평등하고 자유로운 새로운 사회가 시작됩니다.", bg: "S11_B" }], nextAuto: "QUIT" }
     };
 
-    /* 기초 시스템 제어 */
     function showGuide(e) { 
         if(e) e.stopPropagation();
+        // 가이드 화면으로 넘어가면 표지 비디오 정지
+        document.getElementById('title-video').pause();
         document.getElementById('title-screen').style.display = 'none'; 
         document.getElementById('guide-screen').style.display = 'flex'; 
     }
@@ -367,20 +370,17 @@
         const seq = curScene.seq[curIdx];
         document.getElementById('choices-container').innerHTML = "";
         
-        // 배경 설정 및 MP4 동영상 파일 예외 감지 처리
         if(seq.bg !== undefined) {
             let fileKey = bgMap[seq.bg];
             const bgLayer = document.getElementById('bg-layer');
             const bgVideo = document.getElementById('bg-video');
 
             if(fileKey && fileKey.endsWith('.mp4')) {
-                // 동영상인 경우
                 bgLayer.style.backgroundImage = 'none';
                 bgVideo.src = fileKey;
                 bgVideo.style.display = 'block';
-                bgVideo.play().catch(err => console.log("비디오 자동재생 제한 확인:", err));
+                bgVideo.play().catch(err => console.log("비디오 재생 오류:", err));
             } else {
-                // 일반 이미지나 검은화면인 경우
                 bgVideo.style.display = 'none';
                 bgVideo.pause();
                 bgLayer.style.backgroundImage = fileKey ? `url('${fileKey}')` : 'none';
