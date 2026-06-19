@@ -1,1077 +1,209 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Celestial: 어드벤처 웹 게임</title>
-    <style>
-        /* 기본 Reset 및 전체 레이아웃 구상 */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            color: #fff;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        /* 게임 메인 컨테이너 */
-        #game-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
+<title>Abyss Zero</title>
 
-        /* 1. 상단 상태 바 (Status Bar) */
-        #status-bar {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            border-bottom: 2px solid var(--theme-color, #fff100);
-            box-shadow: 0 0 15px var(--theme-color, #fff100);
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: border-color 0.5s, box-shadow 0.5s;
-        }
-        #scene-title {
-            font-size: 1.1rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--theme-color, #fff100);
-            text-shadow: 0 0 8px var(--theme-color, #fff100);
-            width: 25%;
-        }
-        #stats-container {
-            display: flex;
-            gap: 20px;
-            width: 75%;
-            justify-content: flex-end;
-        }
-        .stat-box {
-            display: flex;
-            flex-direction: column;
-            width: 140px;
-        }
-        .stat-label {
-            font-size: 0.75rem;
-            font-weight: bold;
-            margin-bottom: 4px;
-            display: flex;
-            justify-content: space-between;
-            color: #aaa;
-        }
-        .stat-label span.value {
-            color: #fff;
-            font-weight: 800;
-        }
-        .gauge-bar-bg {
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .gauge-bar-fill {
-            height: 100%;
-            width: 100%;
-            background: var(--theme-color, #fff100);
-            box-shadow: 0 0 8px var(--theme-color, #fff100);
-            transition: width 0.4s ease-in-out;
-        }
+<style>
 
-        /* 2. 중앙 전체 화면 배경 공간 */
-        #background-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-        .bg-element {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            top: 0;
-            left: 0;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .bg-element.active {
-            opacity: 1;
-        }
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-        /* 3. 하단부 컨텐츠 영역 (멀티레이어 UI + 대사창) */
-        #bottom-container {
-            position: relative;
-            z-index: 5;
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 20px 30px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            pointer-events: none; /* 클릭 관통 방지 */
-        }
-        #bottom-container * {
-            pointer-events: auto;
-        }
+body{
+    width:100vw;
+    height:100vh;
+    overflow:hidden;
+    font-family:'Malgun Gothic', sans-serif;
+    background:black;
+    color:white;
+}
 
-        /* 동적 레이아웃 스위칭 영역 (멀티레이어 UI 영역) */
-        #multilayer-area {
-            width: 100%;
-            min-height: 110px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+/* 배경 */
 
-        /* 선택지 레이아웃 */
-        #choices-box {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .choice-btn {
-            width: 100%;
-            padding: 14px 20px;
-            background: var(--theme-bg, rgba(255, 241, 0, 0.15));
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 2px solid var(--theme-color, #fff100);
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            color: #fff;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .choice-btn:hover:not(:disabled) {
-            background: var(--theme-color, #fff100);
-            color: #000;
-            box-shadow: 0 0 15px var(--theme-color, #fff100);
-            font-weight: 700;
-            transform: translateY(-2px);
-        }
-        .choice-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            border-style: dashed;
-            background: rgba(50, 50, 50, 0.4);
-        }
+#background{
+    position:fixed;
+    inset:0;
+    z-index:0;
+}
 
-        /* 화상통화 스타일 프로필 레이아웃 */
-        #profile-window {
-            display: none;
-            width: 260px;
-            background: var(--theme-bg, rgba(255, 241, 0, 0.15));
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 2px solid var(--theme-color, #fff100);
-            box-shadow: 0 0 20px var(--theme-color, #fff100);
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            animation: holo-glow 1.5s infinite alternate;
-        }
-        @keyframes holo-glow {
-            from { box-shadow: 0 0 10px var(--theme-color, #fff100); }
-            to { box-shadow: 0 0 22px var(--theme-color, #fff100); }
-        }
-        .profile-img-frame {
-            width: 100%;
-            height: 120px;
-            background: #111;
-            border: 1px solid var(--theme-color, #fff100);
-            overflow: hidden;
-            position: relative;
-        }
-        .profile-img-frame::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 6px 100%;
-        }
-        .profile-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .profile-tag {
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: var(--theme-color, #fff100);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
+#background img,
+#background video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
 
-        /* 하단 대사창 (Dialogue Box) */
-        #dialogue-box {
-            width: 100%;
-            min-height: 130px;
-            background: var(--theme-bg, rgba(255, 241, 0, 0.15));
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 2px solid var(--theme-color, #fff100);
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
-            border-radius: 8px;
-            padding: 20px;
-            cursor: pointer;
-            position: relative;
-            transition: border-color 0.5s, background 0.5s;
-        }
-        #speaker-name {
-            font-size: 1.05rem;
-            font-weight: 800;
-            color: var(--theme-color, #fff100);
-            text-shadow: 0 0 5px var(--theme-color, #fff100);
-            margin-bottom: 8px;
-        }
-        #dialogue-text {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: #f5f5f5;
-            word-break: keep-all;
-        }
-        #next-indicator {
-            position: absolute;
-            bottom: 12px;
-            right: 20px;
-            font-size: 0.8rem;
-            color: var(--theme-color, #fff100);
-            opacity: 0.7;
-            animation: blink 1s infinite alternate;
-        }
-        @keyframes blink {
-            from { opacity: 0.2; } to { opacity: 1; }
-        }
+/* 상태바 */
 
-        /* 미니게임(PIN) 팝업 레이아웃 */
-        #minigame-modal {
-            display: none;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 100;
-            background: rgba(0, 20, 30, 0.9);
-            border: 2px solid #00f3ff;
-            box-shadow: 0 0 25px #00f3ff;
-            backdrop-filter: blur(15px);
-            padding: 25px;
-            border-radius: 10px;
-            text-align: center;
-            width: 300px;
-        }
-        #minigame-modal h3 {
-            color: #00f3ff;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-            text-shadow: 0 0 8px #00f3ff;
-        }
-        #pin-display {
-            background: #000;
-            border: 1px solid #00f3ff;
-            padding: 10px;
-            font-size: 1.5rem;
-            letter-spacing: 5px;
-            font-weight: bold;
-            color: #00f3ff;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            height: 45px;
-        }
-        .pin-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-        .pin-btn {
-            background: rgba(0, 243, 255, 0.1);
-            border: 1px solid #00f3ff;
-            color: #00f3ff;
-            padding: 12px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .pin-btn:hover {
-            background: #00f3ff;
-            color: #000;
-        }
+#statusBar{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    padding:15px;
 
-        /* 4. 화면 효과(FX) 연출 클래스 */
-        /* Shake 효과 */
-        .effect-shake {
-            animation: fx-shake 0.1s infinite alternate;
-        }
-        @keyframes fx-shake {
-            0% { transform: translate(2px, 1px) rotate(0deg); }
-            100% { transform: translate(-1px, -2px) rotate(-1deg); }
-        }
-        /* Full Blur 효과 */
-        .effect-blur {
-            filter: blur(12px);
-            -webkit-filter: blur(12px);
-        }
-        /* Slight Blur 효과 (테두리만 비네트 블러) */
-        .effect-slight-blur {
-            box-shadow: inset 0 0 80px 40px rgba(0,0,0,0.9);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
-        }
-    </style>
+    background:rgba(0,0,0,.4);
+    backdrop-filter:blur(10px);
+
+    z-index:10;
+}
+
+#sceneTitle{
+    font-size:24px;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+.stats{
+    display:flex;
+    gap:20px;
+    align-items:center;
+    margin-bottom:10px;
+}
+
+.stat{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.gauge{
+    width:140px;
+    height:12px;
+
+    border:1px solid white;
+    border-radius:20px;
+
+    overflow:hidden;
+}
+
+.fill{
+    height:100%;
+    width:50%;
+
+    background:#ffe600;
+
+    transition:.5s;
+}
+
+#money{
+    font-size:18px;
+}
+
+/* 멀티 UI */
+
+#uiLayer{
+    position:absolute;
+    bottom:180px;
+    left:50%;
+    transform:translateX(-50%);
+
+    width:80%;
+    min-height:120px;
+
+    z-index:20;
+}
+
+/* 대사창 */
+
+#dialogueBox{
+    position:absolute;
+
+    left:50%;
+    bottom:0;
+
+    transform:translateX(-50%);
+
+    width:90%;
+    height:160px;
+
+    background:rgba(255,255,0,.15);
+
+    backdrop-filter:blur(10px);
+
+    border:2px solid #ffe600;
+
+    padding:15px;
+
+    z-index:30;
+}
+
+#speaker{
+    font-size:20px;
+    font-weight:bold;
+    color:#ffe600;
+
+    margin-bottom:10px;
+}
+
+#dialogue{
+    line-height:1.6;
+}
+
+</style>
 </head>
 <body>
 
-    <div id="game-container">
-        <header id="status-bar">
-            <div id="scene-title">로딩 중...</div>
-            <div id="stats-container">
-                <div class="stat-box" id="stat-H">
-                    <div class="stat-label">Humanity <span class="value">100</span></div>
-                    <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width: 100%;"></div></div>
-                </div>
-                <div class="stat-box" id="stat-C">
-                    <div class="stat-label">Credit <span class="value">100</span></div>
-                    <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width: 100%;"></div></div>
-                </div>
-                <div class="stat-box" id="stat-O">
-                    <div class="stat-label">Oxygen <span class="value">100</span></div>
-                    <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width: 100%;"></div></div>
-                </div>
-                <div class="stat-box" id="stat-M">
-                    <div class="stat-label">Memory <span class="value">0</span></div>
-                    <div class="gauge-bar-bg"><div class="gauge-bar-fill" style="width: 0%;"></div></div>
-                </div>
-            </div>
-        </header>
+<div id="background">
+    <img src="./background/셀레스티얼_복도.png">
+</div>
 
-        <div id="background-layer"></div>
+<header id="statusBar">
 
-        <div id="bottom-container">
-            <div id="multilayer-area">
-                <div id="choices-box" style="display: none;"></div>
-                <div id="profile-window" style="display: none;">
-                    <div class="profile-img-frame">
-                        <img id="profile-pic" src="" alt="Profile" class="profile-img">
-                    </div>
-                    <div id="profile-name" class="profile-tag">SYSTEM COM</div>
-                </div>
-            </div>
-
-            <div id="dialogue-box">
-                <div id="speaker-name">시스템</div>
-                <div id="dialogue-text">화면을 클릭하여 게임을 시작하세요.</div>
-                <div id="next-indicator">▶ CLICK</div>
-            </div>
-        </div>
+    <div id="sceneTitle">
+        추락 : 에이스의 말로
     </div>
 
-    <div id="minigame-modal">
-        <h3 id="minigame-title">보안 코드 입력</h3>
-        <div id="pin-display"></div>
-        <div class="pin-grid">
-            <button class="pin-btn" onclick="pressPin('1')">1</button>
-            <button class="pin-btn" onclick="pressPin('2')">2</button>
-            <button class="pin-btn" onclick="pressPin('3')">3</button>
-            <button class="pin-btn" onclick="pressPin('4')">4</button>
-            <button class="pin-btn" onclick="pressPin('5')">5</button>
-            <button class="pin-btn" onclick="pressPin('6')">6</button>
-            <button class="pin-btn" onclick="pressPin('7')">7</button>
-            <button class="pin-btn" onclick="pressPin('8')">8</button>
-            <button class="pin-btn" onclick="pressPin('9')">9</button>
-            <button class="pin-btn" style="background:rgba(255,0,0,0.2); border-color:#ff0000; color:#ff0000;" onclick="clearPin()">C</button>
-            <button class="pin-btn" onclick="pressPin('0')">0</button>
-            <button class="pin-btn" style="background:rgba(0,255,0,0.2); border-color:#00ff00; color:#00ff00;" onclick="submitPin()">E</button>
+    <div class="stats">
+
+        <div class="stat">
+            H 50
+            <div class="gauge">
+                <div class="fill" style="width:50%"></div>
+            </div>
         </div>
+
+        <div class="stat">
+            C 95
+            <div class="gauge">
+                <div class="fill" style="width:95%"></div>
+            </div>
+        </div>
+
+        <div class="stat">
+            O 100
+            <div class="gauge">
+                <div class="fill" style="width:100%"></div>
+            </div>
+        </div>
+
     </div>
 
-    <script>
-        // ==========================================
-        // 1. 핵심 전역 시스템 변수 및 상태 관리
-        // ==========================================
-        const stats = { H: 100, C: 100, O: 100, M: 0 };
-        let currentSceneId = "START";
-        let currentSeqIndex = 0;
-        let isChoiceActive = false;
-        let isMinigameActive = false;
-        let pinAnswer = "1024"; // 미니게임 정답 비밀번호 설정
-        let currentPinInput = "";
-        let globalS8MemoryStep = 1; // S8 전용 단계 빌더 제어 플래그
+    <div id="money">
+        M 1,000,000 Cr
+    </div>
 
-        // 테마 지정 매핑 정보 
-        const sceneThemes = {
-            S1: "neon-yellow", S2: "neon-yellow", S7: "neon-yellow", S8: "neon-yellow",
-            S9: "neon-yellow", S10: "neon-yellow", S11_A: "neon-yellow", S11_B: "neon-yellow",
-            S3: "cyan-neon", S4: "cyan-neon", S5: "cyan-neon", S6: "cyan-neon", START: "neon-yellow"
-        };
+</header>
 
-        // ==========================================
-        // 2. 통합 구조화된 씬 시나리오 데이터셋 
-        // ==========================================
-        const storyData = {
-            START: {
-                title: "INTRO",
-                bg: "video/Cover.mp4",
-                seq: [
-                    { speaker: "시스템", text: "셀레스티얼 가상 제어 네트워크에 접속합니다. 화면을 누르면 시작됩니다." }
-                ],
-                nextAuto: "S1"
-            },
-            S1: {
-                title: "S1 추락: 에이스의 말로",
-                bg: "background/셀레스티얼_복도.png",
-                effect: "shake",
-                bgm: "siren",
-                seq: [
-                    { speaker: "나레이션", text: "찬란한 하늘의 초호화 도시 '셀레스티얼'" },
-                    { speaker: "커스터디언", text: "놓치면 안된다 잡아라!! 1, 4분대 아래층에서 대기! 3분대는 반대로 돌아서 몰아라! 2분대는 나를 따라 상급 관리자 ‘잭’을 뒤쫓는다!", effect: "shake", bgm: "siren" },
-                    { speaker: "잭", text: "이게 도대체 무슨 일인가.." }
-                ],
-                bgTransition: { triggerIndex: 2, nextBg: "scene/S1.png" }, // 대사와 대사 사이 배경 전환 규칙 실현
-                seqPostTransition: [
-                    { speaker: "커스터디언", text: "중앙 데이터 탈취범 ‘잭’ 생포 완료. 신용 등급 말소 및 셀레스티얼 추방을 진행합니다." }
-                ],
-                choices: [
-                    { text: "이거 왜 이러십니까! 저는 아무것도 하지 않았습니다!", stats: { H: 5 }, isEmotional: true },
-                    { text: "(격하게 발버둥을 치며 저항한다)", stats: { H: -10 }, isEmotional: true },
-                    { text: "당신들 누구야! 책임자 불러와!", stats: { H: -20 }, isEmotional: true }
-                ],
-                bgTransitionFinal: "scene/S1_2.png", // 선택지 이후 대사 전 컷 전환 연출
-                seqFinal: [
-                    { speaker: "커스터디언", text: "이미 모든 죄가 밝혀졌습니다. 아무리 발버둥쳐도 빠져나갈 수 없습니다.", statsApply: { C: 0 }, effect: "shake" }
-                ],
-                nextAuto: "S2"
-            },
-            S2: {
-                title: "S2 회상: 기억의 파편",
-                bg: "검은화면",
-                seq: [
-                    { speaker: "나레이션", text: "추락의 충격으로 잭은 잠시 의식을 잃었다." },
-                    { speaker: "나레이션", text: "그의 눈앞에 스쳐 지나가는 것은 과거의 셀레스티얼이었다. 따뜻한 빛, 웃음소리, 그리고 아직 상급 관리자이던 자신…", bgChange: "scene/S2.png" },
-                    { speaker: "잭", text: "오늘도 이 아름다운 도시를 잘 지켜냈군." },
-                    { speaker: "나레이션", text: "그러나 그 모든 기억은 이제 어둠 속으로 사라졌다.", effect: "blur" },
-                    { speaker: "잭", text: "(희미한 목소리) …내가… 왜… 이렇게 된 거지…", bgChange: "검은화면" }
-                ],
-                nextAuto: "S3"
-            },
-            S3: {
-                title: "S3 최하층: 질식의 거리",
-                bg: "scene/S3.png",
-                statsApply: { O: 30 },
-                effect: "slight_blur",
-                bgm: "breathing",
-                seq: [
-                    { speaker: "나레이션", text: "빛조차 닿지 않는 최하층, ‘어비스 제로’. 악취와 낮은 산소 농도로 숨조차 쉬기 어렵다." },
-                    { speaker: "잭", text: "(거친 숨소리) ..여긴.. 어디지..? 목이.. 숨을 못 쉬겠어.." },
-                    { speaker: "나레이션", text: "신용 등급 말소.신용 등급 말소.신용 등급 말소." },
-                    { speaker: "나레이션", text: "자가 중앙 제어 장치는 그를 죽여야 했으나, 추락의 충격으로 시스템이 망가져 가까스로 목숨을 구했다." },
-                    { speaker: "나레이션", text: "하지만 자가 중앙 제어 장치가 없다면 결국 서서히 죽어갈 것이다.." },
-                    { speaker: "잭", text: "(떨리는 손으로) …이걸… 고쳐야해… 그래야 살 수 있어…" },
-                    { speaker: "나레이션", text: "반파된 신체와 불안정한 호흡 속에서, 그는 죽음의 문턱에서 생명을 연장하기 위해 직접 수리를 시작한다." }
-                ],
-                branchType: "puzzle_cable" // 특수 조건 분기용 분별 플래그
-            },
-            S4: {
-                title: "S4 조력자: 뜻밖의 조우",
-                bg: "검은화면",
-                statsApply: { O: 60 },
-                seq: [
-                    { speaker: "나레이션", text: "잭은 어느 따뜻하고 포근한 방 안에서 눈을 떴다." },
-                    { speaker: "상인", text: "물 좀 마셔. 마침 내가 그곳을 지나가던 중이라 다행이지. 아니었다면 그곳에서 꼼짝않고 죽었을거야.", bgChange: "scene/S4_1.png" }
-                ],
-                choices: [
-                    { text: "…당신은 누구죠? 왜 저를 살려주신 겁니까?", stats: { H: 5, C: 10 } },
-                    { text: "..당신 누구야. 나를 왜 살린거지? 꿍꿍이가 대체 뭔가!", stats: { H: -10 } },
-                    { text: "(대답하지 않고 물을 받아 마신다.)", stats: { H: -20 } }
-                ],
-                seqPost: [
-                    { speaker: "상인", text: "네 얼굴을 보자마자 알 수 있었어. (구) 상급 관리자 ‘잭’. 현재는 대규모 데이터 탈취란 누명을 쓰고 죽었지." },
-                    { speaker: "상인", text: "적어도 위에서는 그렇게 알고 있을거야. 그래서 널 그냥 두고 볼 수 없었어. 우리는 셀레스티얼의 진실을 파헤치고 있으니까.." },
-                    { speaker: "상인", text: "자네를 다시 셀레스티얼로 갈 수 있도록 도와줄 수 있는 사람을 소개하지. 우리 팀의 중요 핵심 브레인 멤버, ‘스카이’다.", bgChange: "scene/S4_2.png" },
-                    { speaker: "스카이", text: "당신이 잭이군." },
-                    { speaker: "스카이", text: "나는 오래 전부터 상층부를 의심해왔지만 내 다리가 이래서 직접 올라갈 수가 없었지." },
-                    { speaker: "스카이", text: "당신을 다시 셀레스티얼로 보내는데 협력할테니, 당신도 나를 도와줘야겠어. (불법 플러그인 이식)", statsApply: { C: -10 } }
-                ],
-                choicesPost: [
-                    { text: "(화들짝 놀라며)…상층부를 의심한다고요?", nextLocal: "finish" },
-                    { text: "저는 그런 터무니없는 음모론 따위에 휘말리지 않습니다.", stats: { H: -10 }, nextLocal: "finish" }
-                ],
-                seqFinal: [
-                    { speaker: "상인", text: "자, 내 상인 신분으로는 중층부까지가 최선이야. 여기서 헤어져야 할 것 같아. 더 못 도와줘서 미안해. 꼭 성공하기를 바랄게.", bgChange: "background/중층부_거리.png", statsApply: { M: 200000 } }
-                ],
-                nextAuto: "S5"
-            },
-            S5: {
-                title: "S5 중간층: 억압의 그림자",
-                bg: "background/중층부_거리.png",
-                seq: [
-                    { speaker: "나레이션", text: "잭은 중앙 제어 장치를 수리한 뒤, 중층부로 향하는 길목에서 잠시 발걸음을 멈췄다." },
-                    { speaker: "나레이션", text: "그곳에서 그는 충격적인 광경을 목격했다. 신용 등급이 낮다는 이유로 시민들이 강제로 끌려가고 있었다.", bgChange: "scene/S5.png", bgm: "siren" },
-                    { speaker: "병장", text: "신용 등급 미달자 확인. 분리 조치 실행." },
-                    { speaker: "시민A", text: "엄마..아빠...." },
-                    { speaker: "시민B", text: "제발… 아이만은 데려가지 말아주세요!" },
-                    { speaker: "나레이션", text: "잭은 숨을 죽이며 그 장면을 지켜보았다. 그리고 그가 눈을 돌리고 있던 진실을 마주보게 되었다." }
-                ],
-                nextAuto: "S6"
-            },
-            S6: {
-                title: "S6 상승: 유리 엘레베이터",
-                bg: "scene/S6.png",
-                statsApply: { C: -20 },
-                effect: "shake",
-                seq: [
-                    { speaker: "잭", text: "(숨을 몰아쉬며) …이제… 올라간다…" },
-                    { speaker: "스카이", text: "위로 올라갈수록 보안망이 꼼꼼해지고 있어. 조심해야겠어..", profile: "Sky" }, // 프로필 활성화 규칙 구현
-                    { speaker: "잭", text: "…내가 사랑했던 도시로… 다시 돌아간다…", profile: "close" },
-                    { speaker: "나레이션", text: "마침내, 셀레스티얼의 입구가 눈앞에 펼쳐진다.", bgChange: "background/셀레스티얼_입구.png" }
-                ],
-                nextAuto: "ROUTE_CHECK" // If 조건문 처리를 위한 인터미디어트 라우터 호출
-            },
-            S7: {
-                title: "S7 잠입: 낯선 고향의 초상",
-                bg: "scene/S7.png",
-                seq: [
-                    { speaker: "나레이션", text: "마침내, 잭의 고향, 하늘의 초호화 도시 ‘셀레스티얼’이 눈앞에 펼쳐졌다." },
-                    { speaker: "나레이션", text: "그러나 그곳은 더이상 그를 결코 따뜻하지 않은, 차갑고 낯선 표정으로 그를 맞이했다." },
-                    { speaker: "커스터디언", text: "(무표정하게) 신용 등급 미달자. 출입할 수 없다." },
-                    { speaker: "나레이션", text: "당황해하는 잭을 누군가 뒤에서 잡아끌어간다." },
-                    { speaker: "커스터디언A", text: "…잭? 네가 맞지? 여기서 이렇게 다시 만날 줄은 몰랐군. 여기를 어쩌려고 다시 올라왔나.. 안에 들어갈 방법이 있긴 한데.. 쉽지는 않을걸세." }
-                ],
-                choices: [
-                    { text: "그게 정말인가? 만약 알고 있다면 부디 알려주게", stats: { H: 10, C: -30 }, nextScene: "S8" },
-                    { text: "자네 도움은 필요없네 내가 알아서 들어갈 수 있네.", stats: { H: -20, C: -30 }, nextScene: "S8" }
-                ]
-            },
-            S7_Pass: {
-                title: "S7_Pass 진입 성공",
-                bg: "background/셀레스티얼_전경.png", // 스크립트 명세 리소스 매핑
-                seq: [
-                    { speaker: "커스터디언", text: "(무표정하게) 안녕하십니까, 셀레스티얼에 오신 것을 환영합니다." }
-                ],
-                nextAuto: "S8"
-            },
-            S8: {
-                title: "S8 중앙 서버: 낙원의 실태",
-                bg: "video/S8.mp4",
-                statsApply: { C: -30 },
-                seq: [
-                    { speaker: "나레이션", text: "삼엄한 감시를 뚫고 진입한 중앙 서버실, 그곳의 정중앙에는 거대한 구체의 무언가가 돌아가고 있었다." },
-                    { speaker: "잭", text: "이게 뭐지..?" },
-                    { speaker: "나레이션", text: "그것은 ‘골드 디거’라 불리는 시스템의 실체, 신용 등급을 조작하는 장치였다." },
-                    { speaker: "잭", text: " …이건… 이게 가능하다고…? 신용 등급을 조작할 수 있는 엔진이 존재한다는 말인가.. 이게 이사회의 추악한 민낯이로구나…." },
-                    { speaker: "나레이션", text: "부유한 이사회들이 자신의 지위를 유지하기 위해 '골드 디거'에 돈을 주고 신용 등급을 올리고 있었다." },
-                    { speaker: "나레이션", text: "셀레스티얼과 이사회, 그리고 골드디거까지. 이 모두는 가상의 가치로 포장된 도시 전체를 지탱하는 독재의 심장이었다." },
-                    { speaker: "잭", text: "(분노에 떨며) …내 누명은 단순한 실수가 아니었어… 이사회의 독재를 가리고, 입을 막기 위해 누군가는 반드시 희생되어야 했던 거야…" },
-                    { speaker: "나레이션", text: "잭의 분노가 끓어오른다. 그는 그제서야 스카이가 했던 이야기들이 이해가 되기 시작했다." },
-                    { speaker: "나레이션", text: "잭은 이사회의 민낯을 폭로하기 위한 데이터를 정리한다." }
-                ],
-                branchType: "memory_matrix" // 데이터 수집 다단계 매트릭스 플래그
-            },
-            S9: {
-                title: "S9 거인의 분노: 이사회의 추격",
-                bg: "scene/S9.png",
-                effect: "shake",
-                bgm: "siren",
-                seq: [
-                    { speaker: "나레이션", text: "자신을 버린 셀레스티얼로 돌아온 대가는 혹혹했다. 이사회는 모든 가동 병력을 투입해 잭을 사살하려 했다." },
-                    { speaker: "커스터디언", text: "모든 출입구 봉쇄 완료. 목표 대상 ‘잭’ 포위 완료. 생포를 시작합니다." },
-                    { speaker: "잭", text: "…모든 탈출로가… 막혔어… 빠져나갈 수가 없어.." },
-                    { speaker: "나레이션", text: "절체절명의 순간, 스카이가 무전을 해왔다." },
-                    { speaker: "스카이", text: "잭, 골드 디거를 사용해서 신용 등급을 90 이상으로 올린다면 당장 저들이 너를 잡을 수 있는 명분이 없어." },
-                    { speaker: "잭", text: "꼭 골드디거를 사용해야만 해? 그게 아니더라도 다른 방법이 있지 않을까..?" },
-                    { speaker: "스카이", text: "잭, 지금은 이 방법 외에는 없어!" },
-                    { speaker: "나레이션", text: "잭은 아이러니한 선택 앞에 놓였다. 이사회의 독재를 위해 사용된 그 추악한 도구, ‘골드 디거’를 직접 사용해야만 이 포위망을 뚫고 살아남을 수 있었던 것이다."
-                ],
-                branchType: "gold_digger_choice"
-            },
-            S10: {
-                title: "S10 갈림길: 이사회의 제안",
-                bg: "scene/S10.png",
-                seq: [
-                    { speaker: "나레이션", text: "마침내 잭은 이사회와 마주했다." },
-                    { speaker: "이사회", text: "네가 보여준 힘은 실로 경이롭군. 우리와 함께한다면 너는 영원히 풍요 속에 살며, 도시의 질서를 유지하는 자가 될 것이야. 거부한다면, 네 존재는 이곳에서 소멸될 뿐이다." },
-                    { speaker: "잭", text: "…내가… 이 자리를 받아들여야 하는 걸까? 아니면… 끝까지 진실을 위해야 하는 걸까… 내 고향, 나 자신과 시민들을 위해… 어느 쪽이 옳은 선택이지…"
-                ],
-                choices: [
-                    { text: "이사회의 제안 수락", nextScene: "S11_A" },
-                    { text: "이사회의 제안 거절 (필요 Humanity: 50)", nextScene: "S11_B", reqH: 50 }
-                ]
-            },
-            S11_A: {
-                title: "S11_A 거짓된 낙원의 관리자",
-                bg: "scene/S11_A.png",
-                seq: [
-                    { speaker: "잭", text: "시민들은 우리를 위해 존재하고, 우리는 그들을 지배한다." },
-                    { speaker: "나레이션", text: "그는 독재의 일부가 되어, 낙원의 관리자라는 이름으로 영원히 이사회로서 도시를 그들과 함께 지배하게 되었다." },
-                    { speaker: "나레이션", text: "하지만 과연 이와 다른 잭은 존재하지 않을까?"
-                ],
-                nextAuto: "RESTART"
-            },
-            S11_B: {
-                title: "S11_B 재정립",
-                bg: "scene/S11_B.png",
-                seq: [
-                    { speaker: "나레이션", text: "잭은 끝까지 자아를 지켜냈다. 그는 이사회의 제안을 거부하고, 새로운 사회 구조를 제안했다." },
-                    { speaker: "잭", text: "(단호하면서도 따뜻하게) 이제 신용 등급은 존재하지 않습니다. 모두가 같은 출발선에서 살아가야 합니다." },
-                    { speaker: "잭", text: "권력은 분산되고, 누구도 독재로 이 사회를 다스릴 수 없습니다. 함께 새로운 사회를 만들어 나갑시다." },
-                    { speaker: "나레이션", text: "이사회가 쌓은 거짓된 낙원은 무너졌지만, 모두가 함께 평등과 협력의 새로운 사회를 쌓아올릴 것이다."
-                ],
-                nextAuto: "RESTART"
-            }
-        };
+<div id="uiLayer">
+</div>
 
-        // ==========================================
-        // 3. UI 및 테마 다형성 렌더링 엔진
-        // ==========================================
-        function updateUI() {
-            // 시스템 스탯 클램핑 및 최상단 바 갱신 (0 이하 방지)
-            for (let key in stats) {
-                if (stats[key] < 0) stats[key] = 0;
-                const statBox = document.getElementById(`stat-${key}`);
-                if (statBox) {
-                    statBox.querySelector('.value').innerText = Math.floor(stats[key]);
-                    // M(돈)의 최대 한도 기준치를 임의로 300,000으로 잡고 백분율 환산 계산
-                    let maxRatio = (key === 'M') ? 300000 : 100;
-                    let percent = Math.min((stats[key] / maxRatio) * 100, 100);
-                    statBox.querySelector('.gauge-bar-fill').style.width = `${percent}%`;
-                }
-            }
+<div id="dialogueBox">
 
-            // 실시간 O < 50 디버프 자동 체크 연출 추가
-            const bgLayer = document.getElementById('background-layer');
-            if (stats.O < 50) {
-                bgLayer.classList.add('effect-slight-blur');
-            } else {
-                bgLayer.classList.remove('effect-slight-blur');
-            }
+    <div id="speaker">
+        나레이션
+    </div>
 
-            // 테마 가변 스위칭 제어
-            const currentTheme = sceneThemes[currentSceneId] || "neon-yellow";
-            const root = document.documentElement;
-            if (currentTheme === "cyan-neon") {
-                root.style.setProperty('--theme-color', '#00f3ff');
-                root.style.setProperty('--theme-bg', 'rgba(0, 243, 255, 0.15)');
-            } else {
-                root.style.setProperty('--theme-color', '#fff100');
-                root.style.setProperty('--theme-bg', 'rgba(255, 241, 0, 0.15)');
-            }
-        }
+    <div id="dialogue">
+        찬란한 하늘의 초호화 도시 셀레스티얼
+    </div>
 
-        function setBackground(src) {
-            const bgLayer = document.getElementById('background-layer');
-            if (src === "검은화면" || !src) {
-                bgLayer.innerHTML = `<div class="bg-element active" style="background:#000;"></div>`;
-                return;
-            }
+</div>
 
-            const isVideo = src.endsWith('.mp4');
-            const existElement = bgLayer.querySelector('.bg-element');
-            
-            // 동일한 리소스가 상영 중인지 체크 검증
-            if (existElement && existElement.getAttribute('data-src') === src) return;
-
-            let newEl;
-            if (isVideo) {
-                newEl = document.createElement('video');
-                newEl.src = src;
-                newEl.autoplay = true;
-                newEl.loop = true;
-                newEl.muted = true;
-                newEl.playsInline = true;
-            } else {
-                newEl = document.createElement('img');
-                newEl.src = src;
-            }
-            newEl.className = "bg-element";
-            newEl.setAttribute('data-src', src);
-            bgLayer.appendChild(newEl);
-
-            // 크로스페이드 트랜지션 구동
-            setTimeout(() => {
-                if (existElement) existElement.classList.remove('active');
-                newEl.classList.add('active');
-                setTimeout(() => {
-                    if (existElement) existElement.remove();
-                }, 500);
-            }, 50);
-        }
-
-        function setEffect(effect) {
-            const container = document.getElementById('game-container');
-            container.classList.remove('effect-shake', 'effect-blur');
-            if (effect === 'shake') container.classList.add('effect-shake');
-            if (effect === 'blur') container.classList.add('effect-blur');
-        }
-
-        // ==========================================
-        // 4. 핵심 스크립트 진행 가동 로직
-        // ==========================================
-        function initGame() {
-            currentSceneId = "START";
-            currentSeqIndex = 0;
-            stats.H = 100; stats.C = 100; stats.O = 100; stats.M = 0;
-            isChoiceActive = false;
-            isMinigameActive = false;
-            globalS8MemoryStep = 1;
-            document.getElementById('choices-box').style.display = "none";
-            document.getElementById('profile-window').style.display = "none";
-            renderScene();
-        }
-
-        function renderScene() {
-            updateUI();
-            const scene = storyData[currentSceneId];
-            document.getElementById('scene-title').innerText = scene.title || currentSceneId;
-
-            // 씬 진입 초기 설정 스탯 연동 상속 반영
-            if (currentSeqIndex === 0 && scene.statsApply) {
-                Object.assign(stats, scene.statsApply);
-                updateUI();
-            }
-            if (scene.bg && currentSeqIndex === 0) {
-                setBackground(scene.bg);
-            }
-            if (scene.effect && currentSeqIndex === 0) {
-                setEffect(scene.effect);
-            }
-
-            // 분기 매트릭스 핸들링 판별
-            if (scene.branchType && isAtBranchPoint(scene)) {
-                handleSpecialBranch(scene);
-                return;
-            }
-
-            // 시나리오 데이터 구문 분석 어셈블러 빌딩
-            let currentLine = null;
-            let totalSeqCount = (scene.seq ? scene.seq.length : 0);
-            let postSeqCount = (scene.seqPostTransition ? scene.seqPostTransition.length : 0);
-            let finalSeqCount = (scene.seqFinal ? scene.seqFinal.length : 0);
-            let postNormalSeqCount = (scene.seqPost ? scene.seqPost.length : 0);
-
-            // S1 전용 동적 인터리빙 대사 구조 파싱 파트
-            if (currentSceneId === "S1") {
-                if (currentSeqIndex < totalSeqCount) {
-                    currentLine = scene.seq[currentSeqIndex];
-                } else if (currentSeqIndex === totalSeqCount && scene.bgTransition) {
-                    // 대사 사이 지정된 시점에만 정확히 컷 배경 변경 실행 명세 충족
-                    setBackground(scene.bgTransition.nextBg);
-                    currentLine = scene.seqPostTransition[0];
-                } else if (currentSeqIndex === totalSeqCount + 1) {
-                    showChoices(scene.choices);
-                    return;
-                } else if (currentSeqIndex === totalSeqCount + 2) {
-                    setBackground(scene.bgTransitionFinal);
-                    currentLine = scene.seqFinal[0];
-                    if (currentLine.statsApply) Object.assign(stats, currentLine.statsApply);
-                } else {
-                    proceedNextNode(scene.nextAuto);
-                    return;
-                }
-            } 
-            // S4 전용 가변 멀티 분기 정렬 파트
-            else if (currentSceneId === "S4") {
-                if (currentSeqIndex < totalSeqCount) {
-                    currentLine = scene.seq[currentSeqIndex];
-                } else if (currentSeqIndex === totalSeqCount) {
-                    showChoices(scene.choices);
-                    return;
-                } else if (currentSeqIndex > totalSeqCount && currentSeqIndex <= totalSeqCount + postNormalSeqCount) {
-                    currentLine = scene.seqPost[currentSeqIndex - totalSeqCount - 1];
-                } else if (currentSeqIndex === totalSeqCount + postNormalSeqCount + 1) {
-                    showChoices(scene.choicesPost);
-                    return;
-                } else if (currentSeqIndex === totalSeqCount + postNormalSeqCount + 2) {
-                    currentLine = scene.seqFinal[0];
-                } else {
-                    proceedNextNode(scene.nextAuto);
-                    return;
-                }
-            }
-            // 일반 씬 구동 처리 알고리즘
-            else {
-                if (scene.seq && currentSeqIndex < scene.seq.length) {
-                    currentLine = scene.seq[currentSeqIndex];
-                } else {
-                    if (scene.choices) {
-                        showChoices(scene.choices);
-                    } else if (scene.nextAuto) {
-                        proceedNextNode(scene.nextAuto);
-                    }
-                    return;
-                }
-            }
-
-            if (currentLine) {
-                // 라인 단위 인라인 동적 속성 파서 가동
-                if (currentLine.bgChange) setBackground(currentLine.bgChange);
-                if (currentLine.effect) setEffect(currentLine.effect);
-                
-                // 대사창 위 가변 영역 프로필 호출 스위칭 구현 명세 처리
-                if (currentLine.profile) {
-                    if (currentLine.profile === "close") {
-                        document.getElementById('profile-window').style.display = "none";
-                    } else {
-                        document.getElementById('choices-box').style.display = "none";
-                        const pWin = document.getElementById('profile-window');
-                        pWin.style.display = "flex";
-                        document.getElementById('profile-pic').src = `profile/${currentLine.profile}_P.png`;
-                        document.getElementById('profile-name').innerText = currentLine.profile + " COMM LINK";
-                    }
-                }
-
-                document.getElementById('speaker-name').innerText = currentLine.speaker;
-                document.getElementById('dialogue-text').innerText = currentLine.text;
-                updateUI();
-            }
-        }
-
-        function isAtBranchPoint(scene) {
-            if (scene.branchType === "puzzle_cable" && currentSeqIndex >= scene.seq.length) return true;
-            if (scene.branchType === "memory_matrix" && currentSeqIndex >= scene.seq.length) return true;
-            if (scene.branchType === "gold_digger_choice" && currentSeqIndex >= scene.seq.length) return true;
-            return false;
-        }
-
-        function advanceProgress() {
-            if (isChoiceActive || isMinigameActive) return;
-            currentSeqIndex++;
-            renderScene();
-        }
-
-        function proceedNextNode(nextNode) {
-            if (nextNode === "ROUTE_CHECK") {
-                // If 조건문 분기 정밀 필터 로직 전개
-                if (stats.C > 90) {
-                    currentSceneId = "S7_Pass";
-                } else {
-                    currentSceneId = "S7";
-                }
-            } else if (nextNode === "RESTART") {
-                initGame();
-                return;
-            } else {
-                currentSceneId = nextNode;
-            }
-            currentSeqIndex = 0;
-            renderScene();
-        }
-
-        // ==========================================
-        // 5. 선택지 & 특수 서브 연산 분기 어댑터
-        // ==========================================
-        function showChoices(choicesList) {
-            isChoiceActive = true;
-            document.getElementById('profile-window').style.display = "none";
-            const choicesBox = document.getElementById('choices-box');
-            choicesBox.innerHTML = "";
-            choicesBox.style.display = "flex";
-
-            choicesList.forEach(choice => {
-                const btn = document.createElement('button');
-                btn.className = "choice-btn";
-                btn.innerText = choice.text;
-
-                // 예외 제약 사항 1단계 검증: C < 30 상태일 때 기존의 선택지 기능 제한 비활성화 적용
-                if (choice.isEmotional && stats.C < 30) {
-                    btn.disabled = true;
-                    btn.innerText += " (신용 등급 미달로 이성적 통제 불능)";
-                }
-
-                // 예외 제약 사항 2단계 검증: 특정 스탯 한계 요구치 미달 판정 차단 ({reqH: 50})
-                if (choice.reqH && stats.H < choice.reqH) {
-                    btn.disabled = true;
-                    btn.innerText += ` (인간성 ${choice.reqH} 필요)`;
-                }
-
-                btn.onclick = () => {
-                    choicesBox.style.display = "none";
-                    isChoiceActive = false;
-                    
-                    // 스탯 연동 가감산 즉각 반영 및 화면 갱신
-                    if (choice.stats) {
-                        Object.assign(stats, {
-                            H: Math.max(0, stats.H + (choice.stats.H || 0)),
-                            C: Math.max(0, stats.C + (choice.stats.C || 0)),
-                            O: Math.max(0, stats.O + (choice.stats.O || 0)),
-                            M: Math.max(0, stats.M + (choice.stats.M || 0))
-                        });
-                    }
-
-                    if (choice.nextScene) {
-                        proceedNextNode(choice.nextScene);
-                    } else if (choice.nextLocal === "finish") {
-                        currentSeqIndex++;
-                        renderScene();
-                    } else if (choice.customMatrixRedirect) {
-                        choice.customMatrixRedirect();
-                    } else {
-                        currentSeqIndex++;
-                        renderScene();
-                    }
-                };
-                choicesBox.appendChild(btn);
-            });
-        }
-
-        function handleSpecialBranch(scene) {
-            // S3 수리 분기 분기문
-            if (scene.branchType === "puzzle_cable") {
-                showChoices([
-                    { text: "붉은 케이블 연결", customMatrixRedirect: () => triggerS3Fail() },
-                    { text: "푸른 케이블 연결", customMatrixRedirect: () => triggerS3Step2() }
-                ]);
-            } 
-            // S8 연쇄 데이터 수집 다단계 분기 매트릭스
-            else if (scene.branchType === "memory_matrix") {
-                if (globalS8MemoryStep === 1) {
-                    document.getElementById('speaker-name').innerText = "시스템";
-                    document.getElementById('dialogue-text').innerText = "[데이터 정리 1단계]";
-                    showChoices([
-                        { text: "신용 등급 상승 기록을 기준으로 정리 {M+30}", stats: { M: 30 }, customMatrixRedirect: () => { globalS8MemoryStep = 2; renderScene(); } },
-                        { text: "골드 디거 관련 정보를 모두 열람 {M+20}", stats: { M: 20 }, customMatrixRedirect: () => { globalS8MemoryStep = 2; renderScene(); } },
-                        { text: "데이터를 무작위로 정리 {M+10}", stats: { M: 10 }, customMatrixRedirect: () => { globalS8MemoryStep = 2; renderScene(); } }
-                    ]);
-                } else if (globalS8MemoryStep === 2) {
-                    document.getElementById('speaker-name').innerText = "시스템";
-                    document.getElementById('dialogue-text').innerText = "[데이터 정리 2단계]";
-                    showChoices([
-                        { text: "정석적 해제 알고리즘을 사용 {M+30}", stats: { M: 30 }, customMatrixRedirect: () => { globalS8MemoryStep = 3; renderScene(); } },
-                        { text: "불법 플러그인을 연결해 빠르게 해제 {M+20}", stats: { M: 20 }, customMatrixRedirect: () => { globalS8MemoryStep = 3; renderScene(); } },
-                        { text: "일부 해제 포기 {M+10}", stats: { M: 10 }, customMatrixRedirect: () => { globalS8MemoryStep = 3; renderScene(); } }
-                    ]);
-                } else if (globalS8MemoryStep === 3) {
-                    document.getElementById('speaker-name').innerText = "시스템";
-                    document.getElementById('dialogue-text').innerText = "[데이터 정리 3단계]";
-                    showChoices([
-                        { text: "정보를 암호화해 외부 네트워크로 전송 {M+30}", stats: { M: 30 }, customMatrixRedirect: () => checkS8Resolution() },
-                        { text: "데이터를 바로 스카이에게 전송 {M+20}", stats: { M: 20 }, customMatrixRedirect: () => checkS8Resolution() },
-                        { text: "내부에 은밀히 저장 {M+10}", stats: { M: 10 }, customMatrixRedirect: () => checkS8Resolution() }
-                    ]);
-                }
-            } 
-            // S9 골드 디거 무한 루프 가변 리팩토링 및 단일 회차 압축 계산
-            else if (scene.branchType === "gold_digger_choice") {
-                showChoices([
-                    { text: "골드 디거를 사용하지 않는다.", customMatrixRedirect: () => {
-                        document.getElementById('speaker-name').innerText = "나레이션";
-                        document.getElementById('dialogue-text').innerText = "잭은 사살당했습니다. 시스템이 동기화 지점으로 복구됩니다.";
-                        showChoices([{ text: "재시도하기", customMatrixRedirect: () => { proceedNextNode("S9"); } }]);
-                    }},
-                    { text: "골드 디거를 사용한다.", customMatrixRedirect: () => {
-                        // S9 단 한 번에 복합 즉각 계산(Instant Calculation) 상단바 즉시 반영 명세 완벽 실현
-                        let loopsNeeded = Math.ceil((90 - stats.C) / 10);
-                        if (loopsNeeded > 0) {
-                            stats.C = 90;
-                            stats.H = Math.max(0, stats.H - (5 * loopsNeeded));
-                            stats.M = Math.max(0, stats.M - (10000 * loopsNeeded));
-                        }
-                        updateUI();
-                        document.getElementById('speaker-name').innerText = "잭";
-                        document.getElementById('dialogue-text').innerText = "허망하다.. 지금까지 나는 무엇으로부터 시민들을 보호했던거지..";
-                        // 자동 이동 유도 위장 후처리
-                        scene.branchType = null; 
-                        currentSeqIndex = 99; 
-                    }}
-                ]);
-            }
-        }
-
-        // S3 부속 퍼즐 핸들러 파트
-        function triggerS3Fail() {
-            document.getElementById('speaker-name').innerText = "시스템";
-            document.getElementById('dialogue-text').innerText = "전류 과부하. 다시 시도해주십시오.";
-            showChoices([{ text: "루프 시스템 작동 (처음으로 돌아가기)", customMatrixRedirect: () => { proceedNextNode("S3"); } }]);
-        }
-        function triggerS3Step2() {
-            document.getElementById('speaker-name').innerText = "시스템";
-            document.getElementById('dialogue-text').innerText = "안정 가이드 개방됨. 회전 방향을 연동하십시오.";
-            showChoices([
-                { text: "시계 방향 회전", customMatrixRedirect: () => triggerS3Fail() },
-                { text: "반시계 방향 회전", customMatrixRedirect: () => triggerS3Step3() }
-            ]);
-        }
-        function triggerS3Step3() {
-            document.getElementById('speaker-name').innerText = "시스템";
-            document.getElementById('dialogue-text').innerText = "코드를 입력하십시오.";
-            isMinigameActive = true;
-            currentPinInput = "";
-            document.getElementById('pin-display').innerText = "";
-            document.getElementById('minigame-modal').style.display = "block";
-        }
-
-        // PIN 미니게임 전용 인터페이스 함수 개방
-        function pressPin(num) {
-            if(currentPinInput.length < 4) {
-                currentPinInput += num;
-                document.getElementById('pin-display').innerText = currentPinInput;
-            }
-        }
-        function clearPin() {
-            currentPinInput = "";
-            document.getElementById('pin-display').innerText = "";
-        }
-        function submitPin() {
-            document.getElementById('minigame-modal').style.display = "none";
-            isMinigameActive = false;
-            if (currentPinInput === pinAnswer) {
-                stats.C += 30;
-                document.getElementById('speaker-name').innerText = "시스템";
-                document.getElementById('dialogue-text').innerText = "회로 안정화 완료. {Credit +30}";
-                updateUI();
-                showChoices([{ text: "루프 브레이크: 다음 지역 진입", customMatrixRedirect: () => { proceedNextNode("S4"); } }]);
-            } else {
-                triggerS3Fail();
-            }
-        }
-
-        // S8 다단계 수집 조건 검증 터미널
-        function checkS8Resolution() {
-            if (stats.M >= 80) {
-                // 수집 메모리 데이터 적합 충족 통과 명세
-                storyData["S8"].branchType = null;
-                proceedNextNode("S9");
-            } else {
-                document.getElementById('speaker-name').innerText = "시스템";
-                document.getElementById('dialogue-text').innerText = "정리된 데이터 용량 부족. 분석 연산도가 기준치에 도달하지 못해 루프됩니다.";
-                showChoices([{ text: "서버 정리 시스템 재시작", customMatrixRedirect: () => { globalS8MemoryStep = 1; stats.M = 0; renderScene(); } }]);
-            }
-        }
-
-        // 마우스 클릭 진행 리스너 매핑
-        document.getElementById('dialogue-box').onclick = (e) => {
-            e.stopPropagation();
-            advanceProgress();
-        };
-
-        // 이니셜라이저 가동
-        window.onload = () => {
-            initGame();
-        };
-    </script>
 </body>
 </html>
