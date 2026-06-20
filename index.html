@@ -184,6 +184,45 @@ body{
 
 }
 
+#uiLayer{
+
+    position:absolute;
+
+    bottom:180px;
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    width:80%;
+
+    min-height:120px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    z-index:20;
+}
+
+#profileImage{
+
+    width:180px;
+
+    height:auto;
+
+    border-radius:12px;
+
+    border:2px solid #ffe600;
+
+    backdrop-filter:blur(10px);
+
+    box-shadow:0 0 15px rgba(255,230,0,.8);
+
+}
+
 </style>
 </head>
 <body>
@@ -248,6 +287,13 @@ body{
 </header>
 
 <div id="uiLayer">
+
+    <img
+        id="profileImage"
+        src=""
+        style="display:none;"
+    >
+
 </div>
 
 <div id="dialogueBox">
@@ -258,6 +304,31 @@ body{
 </div>
 
 <script>
+
+//프로필 이미지
+const profileImage =
+document.getElementById("profileImage");
+
+//프로필 표시
+function updateProfile(speaker){
+
+    if(profiles[speaker]){
+
+        profileImage.src =
+            profiles[speaker];
+
+        profileImage.style.display =
+            "block";
+
+    }
+    else{
+
+        profileImage.style.display =
+            "none";
+
+    }
+
+}
 
 //상태바 초기값
 const state = {
@@ -376,7 +447,14 @@ function showChoices(choices){
 
 }
 
+//프로필
+const profiles = {
 
+    "잭":"./profile/Jack_P.png",
+
+    "스카이":"./profile/Sky_P.png"
+
+};
 
 //씬
 const scenes = {
@@ -530,6 +608,7 @@ function showDialogue(){
 
     speakerEl.textContent =
         line.speaker;
+        updateProfile(line.speaker);
 
     typeWriter(line.text);
 
