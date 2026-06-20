@@ -202,15 +202,70 @@ body{
 
 <div id="dialogueBox">
 
-    <div id="speaker">
-        나레이션
-    </div>
-
-    <div id="dialogue">
-        찬란한 하늘의 초호화 도시 셀레스티얼
-    </div>
+    <div id="speaker"></div>
+    <div id="dialogue"></div>
 
 </div>
+
+<script>
+
+const dialogueData = [
+
+    {
+        speaker:"나레이션",
+        text:"찬란한 하늘의 초호화 도시 셀레스티얼"
+    },
+
+    {
+        speaker:"커스터디언",
+        text:"놓치면 안된다 잡아라!!"
+    },
+
+    {
+        speaker:"잭",
+        text:"이게 도대체 무슨 일인가.."
+    },
+
+    {
+        speaker:"커스터디언",
+        text:"중앙 데이터 탈취범 잭 생포 완료."
+    }
+
+];
+
+let currentIndex = 0;
+
+const speakerEl = document.getElementById("speaker");
+const dialogueEl = document.getElementById("dialogue");
+
+function showDialogue(){
+
+    if(currentIndex >= dialogueData.length){
+
+        dialogueEl.innerHTML =
+            "대사 종료";
+
+        return;
+    }
+
+    speakerEl.textContent =
+        dialogueData[currentIndex].speaker;
+
+    dialogueEl.textContent =
+        dialogueData[currentIndex].text;
+}
+
+showDialogue();
+
+document.addEventListener("click", () => {
+
+    currentIndex++;
+
+    showDialogue();
+
+});
+
+</script>
 
 </body>
 </html>
