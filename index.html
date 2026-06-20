@@ -45,18 +45,26 @@ body{
     top:0;
     left:0;
     width:100%;
+
     padding:15px;
 
     background:rgba(0,0,0,.4);
     backdrop-filter:blur(10px);
 
     z-index:10;
+
+    display:flex;
+    flex-direction:column;
+    align-items:center;
 }
 
 #sceneTitle{
     font-size:24px;
     font-weight:bold;
-    margin-bottom:10px;
+
+    margin-bottom:15px;
+
+    text-align:center;
 }
 
 .stats{
@@ -119,7 +127,7 @@ body{
 
     transform:translateX(-50%);
 
-    width:90%;
+    width:75%;
     height:160px;
 
     background:rgba(255,255,0,.15);
@@ -128,7 +136,7 @@ body{
 
     border:2px solid #ffe600;
 
-    padding:15px;
+    padding:10px 15px;
 
     z-index:30;
 }
@@ -159,35 +167,34 @@ body{
         추락 : 에이스의 말로
     </div>
 
-    <div class="stats">
+<div class="stats">
 
-        <div class="stat">
-            H 50
-            <div class="gauge">
-                <div class="fill" style="width:50%"></div>
-            </div>
+    <div class="stat">
+        H (50)
+        <div class="gauge">
+            <div class="fill" style="width:50%"></div>
         </div>
-
-        <div class="stat">
-            C 95
-            <div class="gauge">
-                <div class="fill" style="width:95%"></div>
-            </div>
-        </div>
-
-        <div class="stat">
-            O 100
-            <div class="gauge">
-                <div class="fill" style="width:100%"></div>
-            </div>
-        </div>
-
     </div>
 
-    <div id="money">
-        M 1,000,000 Cr
+    <div class="stat">
+        C (95)
+        <div class="gauge">
+            <div class="fill" style="width:95%"></div>
+        </div>
     </div>
 
+    <div class="stat">
+        O (100)
+        <div class="gauge">
+            <div class="fill" style="width:100%"></div>
+        </div>
+    </div>
+
+    <div class="stat">
+        M (1,000,000 Cr)
+    </div>
+
+</div>
 </header>
 
 <div id="uiLayer">
