@@ -36,6 +36,11 @@ body{
     width:100%;
     height:100%;
     object-fit:cover;
+
+    position:absolute;
+
+    inset:0;
+
 }
 
 /* 상태바 */
@@ -228,7 +233,18 @@ body{
 <body>
 
 <div id="background">
-    <img src="./background/셀레스티얼_복도.png">
+
+    <img id="bgImage">
+
+    <video
+        id="bgVideo"
+        autoplay
+        muted
+        loop
+        playsinline
+        style="display:none;">
+    </video>
+
 </div>
 
 <header id="statusBar">
@@ -309,26 +325,6 @@ body{
 const profileImage =
 document.getElementById("profileImage");
 
-//프로필 표시
-function updateProfile(speaker){
-
-    if(profiles[speaker]){
-
-        profileImage.src =
-            profiles[speaker];
-
-        profileImage.style.display =
-            "block";
-
-    }
-    else{
-
-        profileImage.style.display =
-            "none";
-
-    }
-
-}
 
 //상태바 초기값
 const state = {
@@ -462,7 +458,7 @@ const scenes = {
     S1:{
         title:"추락 : 에이스의 말로",
 
-        background:"./background/셀레스티얼_복도.png",
+        background:"./video/S8.mp4",
 
         next:"S2",
 
@@ -534,6 +530,7 @@ const scenes = {
 
 };
 
+//
 let currentScene = "S1";
 
 let dialogueIndex = 0;
@@ -541,6 +538,7 @@ let dialogueIndex = 0;
 let typing = false;
 
 let typingTimer;
+
 
 const speakerEl =
     document.getElementById("speaker");
@@ -552,7 +550,11 @@ const sceneTitle =
     document.getElementById("sceneTitle");
 
 const bgImage =
-    document.querySelector("#background img");
+    document.getElementById("bgImage");
+
+const bgVideo =
+    document.getElementById("bgVideo");
+
 
 function loadScene(sceneId){
 
@@ -565,10 +567,40 @@ function loadScene(sceneId){
     sceneTitle.textContent =
         scene.title;
 
-    bgImage.src =
-        scene.background;
+    changeBackground(
+        scene.background
+    );
 
     showDialogue();
+
+}
+
+//배경 변경 함수
+function changeBackground(path){
+
+    if(path.endsWith(".mp4")){
+
+        bgImage.style.display = "none";
+
+        bgVideo.style.display = "block";
+
+        bgVideo.src = path;
+
+        bgVideo.play();
+
+    }
+
+    else{
+
+        bgVideo.pause();
+
+        bgVideo.style.display = "none";
+
+        bgImage.style.display = "block";
+
+        bgImage.src = path;
+
+    }
 
 }
 
@@ -608,7 +640,6 @@ function showDialogue(){
 
     speakerEl.textContent =
         line.speaker;
-        updateProfile(line.speaker);
 
     typeWriter(line.text);
 
