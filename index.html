@@ -235,14 +235,49 @@ const dialogueData = [
 
 let currentIndex = 0;
 
-const speakerEl = document.getElementById("speaker");
-const dialogueEl = document.getElementById("dialogue");
+let typing = false;
+
+let typingTimer;
+
+const speakerEl =
+    document.getElementById("speaker");
+
+const dialogueEl =
+    document.getElementById("dialogue");
+
+function typeWriter(text){
+
+    dialogueEl.textContent = "";
+
+    let i = 0;
+
+    typing = true;
+
+    typingTimer = setInterval(()=>{
+
+        dialogueEl.textContent += text[i];
+
+        i++;
+
+        if(i >= text.length){
+
+            clearInterval(typingTimer);
+
+            typing = false;
+
+        }
+
+    },30);
+
+}
 
 function showDialogue(){
 
     if(currentIndex >= dialogueData.length){
 
-        dialogueEl.innerHTML =
+        speakerEl.textContent = "";
+
+        dialogueEl.textContent =
             "대사 종료";
 
         return;
@@ -251,13 +286,31 @@ function showDialogue(){
     speakerEl.textContent =
         dialogueData[currentIndex].speaker;
 
-    dialogueEl.textContent =
-        dialogueData[currentIndex].text;
+    typeWriter(
+        dialogueData[currentIndex].text
+    );
 }
 
 showDialogue();
 
-document.addEventListener("click", () => {
+document.addEventListener("click",()=>{
+
+    if(currentIndex >= dialogueData.length){
+
+        return;
+    }
+
+    if(typing){
+
+        clearInterval(typingTimer);
+
+        dialogueEl.textContent =
+            dialogueData[currentIndex].text;
+
+        typing = false;
+
+        return;
+    }
 
     currentIndex++;
 
