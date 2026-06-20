@@ -209,31 +209,62 @@ body{
 
 <script>
 
-const dialogueData = [
+const scenes = {
 
-    {
-        speaker:"나레이션",
-        text:"찬란한 하늘의 초호화 도시 셀레스티얼"
+    S1:{
+        title:"추락 : 에이스의 말로",
+
+        background:"./background/셀레스티얼_복도.png",
+
+        next:"S2",
+
+        dialogues:[
+
+            {
+                speaker:"나레이션",
+                text:"찬란한 하늘의 초호화 도시 셀레스티얼"
+            },
+
+            {
+                speaker:"커스터디언",
+                text:"놓치면 안된다 잡아라!!"
+            },
+
+            {
+                speaker:"잭",
+                text:"이게 도대체 무슨 일인가.."
+            }
+
+        ]
     },
 
-    {
-        speaker:"커스터디언",
-        text:"놓치면 안된다 잡아라!!"
-    },
+    S2:{
+        title:"회상 : 기억의 파편",
 
-    {
-        speaker:"잭",
-        text:"이게 도대체 무슨 일인가.."
-    },
+        background:"./scene/S2.png",
 
-    {
-        speaker:"커스터디언",
-        text:"중앙 데이터 탈취범 잭 생포 완료."
+        next:null,
+
+        dialogues:[
+
+            {
+                speaker:"나레이션",
+                text:"추락의 충격으로 잭은 잠시 의식을 잃었다."
+            },
+
+            {
+                speaker:"잭",
+                text:"내가 왜 이렇게 된거지..."
+            }
+
+        ]
     }
 
-];
+};
 
-let currentIndex = 0;
+let currentScene = "S1";
+
+let dialogueIndex = 0;
 
 let typing = false;
 
@@ -245,13 +276,37 @@ const speakerEl =
 const dialogueEl =
     document.getElementById("dialogue");
 
+const sceneTitle =
+    document.getElementById("sceneTitle");
+
+const bgImage =
+    document.querySelector("#background img");
+
+function loadScene(sceneId){
+
+    currentScene = sceneId;
+
+    dialogueIndex = 0;
+
+    const scene = scenes[sceneId];
+
+    sceneTitle.textContent =
+        scene.title;
+
+    bgImage.src =
+        scene.background;
+
+    showDialogue();
+
+}
+
 function typeWriter(text){
 
-    dialogueEl.textContent = "";
+    dialogueEl.textContent="";
 
-    let i = 0;
+    let i=0;
 
-    typing = true;
+    typing=true;
 
     typingTimer = setInterval(()=>{
 
@@ -263,7 +318,7 @@ function typeWriter(text){
 
             clearInterval(typingTimer);
 
-            typing = false;
+            typing=false;
 
         }
 
@@ -273,50 +328,54 @@ function typeWriter(text){
 
 function showDialogue(){
 
-    if(currentIndex >= dialogueData.length){
+    const scene =
+        scenes[currentScene];
 
-        speakerEl.textContent = "";
-
-        dialogueEl.textContent =
-            "대사 종료";
-
-        return;
-    }
+    const line =
+        scene.dialogues[dialogueIndex];
 
     speakerEl.textContent =
-        dialogueData[currentIndex].speaker;
+        line.speaker;
 
-    typeWriter(
-        dialogueData[currentIndex].text
-    );
+    typeWriter(line.text);
+
 }
-
-showDialogue();
 
 document.addEventListener("click",()=>{
 
-    if(currentIndex >= dialogueData.length){
-
-        return;
-    }
+    const scene =
+        scenes[currentScene];
 
     if(typing){
 
         clearInterval(typingTimer);
 
         dialogueEl.textContent =
-            dialogueData[currentIndex].text;
+            scene.dialogues[dialogueIndex].text;
 
-        typing = false;
+        typing=false;
 
         return;
     }
 
-    currentIndex++;
+    dialogueIndex++;
+
+    if(dialogueIndex >= scene.dialogues.length){
+
+        if(scene.next){
+
+            loadScene(scene.next);
+
+        }
+
+        return;
+    }
 
     showDialogue();
 
 });
+
+loadScene("S1");
 
 </script>
 
