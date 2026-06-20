@@ -153,6 +153,37 @@ body{
     line-height:1.6;
 }
 
+/* 선택지 버튼 스타일*/
+.choiceBtn{
+
+    display:block;
+
+    width:100%;
+
+    margin:10px 0;
+
+    padding:15px;
+
+    font-size:18px;
+
+    color:white;
+
+    background:rgba(255,255,0,.15);
+
+    border:1px solid #ffe600;
+
+    cursor:pointer;
+
+    backdrop-filter:blur(10px);
+
+}
+
+.choiceBtn:hover{
+
+    transform:scale(1.02);
+
+}
+
 </style>
 </head>
 <body>
@@ -170,28 +201,47 @@ body{
 <div class="stats">
 
     <div class="stat">
-        H (50)
+
+        <span id="hText">
+            H (50)
+        </span>
+
         <div class="gauge">
-            <div class="fill" style="width:50%"></div>
+            <div id="hFill" class="fill"></div>
         </div>
+
     </div>
 
     <div class="stat">
-        C (95)
+
+        <span id="cText">
+            C (95)
+        </span>
+
         <div class="gauge">
-            <div class="fill" style="width:95%"></div>
+            <div id="cFill" class="fill"></div>
         </div>
+
+    </div>  
+
+    <div class="stat">
+
+        <span id="oText">
+            O (100)
+        </span>
+
+        <div class="gauge">
+            <div id="oFill" class="fill"></div>
+        </div>
+
     </div>
 
     <div class="stat">
-        O (100)
-        <div class="gauge">
-            <div class="fill" style="width:100%"></div>
-        </div>
-    </div>
 
-    <div class="stat">
-        M (1,000,000 Cr)
+        <span id="mText">
+            M (1,000,000 Cr)
+        </span>
+
     </div>
 
 </div>
@@ -209,6 +259,126 @@ body{
 
 <script>
 
+//상태바 초기값
+const state = {
+
+    H:50,
+
+    C:95,
+
+    O:100,
+
+    M:1000000
+
+};
+
+//상태바 연결
+const hText =
+    document.getElementById("hText");
+
+const cText =
+    document.getElementById("cText");
+
+const oText =
+    document.getElementById("oText");
+
+const mText =
+    document.getElementById("mText");
+
+const hFill =
+    document.getElementById("hFill");
+
+const cFill =
+    document.getElementById("cFill");
+
+const oFill =
+    document.getElementById("oFill");
+
+
+    //상태바 업데이트
+function updateStats(){
+
+    hText.textContent =
+        `H (${state.H})`;
+
+    cText.textContent =
+        `C (${state.C})`;
+
+    oText.textContent =
+        `O (${state.O})`;
+
+    mText.textContent =
+        `M (${state.M.toLocaleString()} Cr)`;
+
+    hFill.style.width =
+        `${state.H}%`;
+
+    cFill.style.width =
+        `${state.C}%`;
+
+    oFill.style.width =
+        `${state.O}%`;
+
+}
+
+//스탯 적용
+function applyEffects(effects){
+
+    if(!effects) return;
+
+    Object.keys(effects).forEach(key=>{
+
+        state[key] += effects[key];
+
+        if(state[key] < 0){
+
+            state[key] = 0;
+
+        }
+
+    });
+
+    updateStats();
+
+}
+
+//선택지 UI
+function showChoices(choices){
+
+    const uiLayer =
+        document.getElementById("uiLayer");
+
+    uiLayer.innerHTML = "";
+
+    choices.forEach(choice=>{
+
+        const btn =
+            document.createElement("button");
+
+        btn.className = "choiceBtn";
+
+        btn.textContent =
+            choice.text;
+
+        btn.onclick = ()=>{
+
+            applyEffects(choice.effects);
+
+            uiLayer.innerHTML = "";
+
+            loadScene(choice.next);
+
+        };
+
+        uiLayer.appendChild(btn);
+
+    });
+
+}
+
+
+
+//씬
 const scenes = {
 
     S1:{
@@ -255,6 +425,30 @@ const scenes = {
             {
                 speaker:"잭",
                 text:"내가 왜 이렇게 된거지..."
+            }
+
+        ],
+
+        choices:[
+
+            {
+                text:"나는 결백하다.",
+
+                effects:{
+                    H:5
+                },
+
+                next:"S3"
+            },
+
+            {
+                text:"분노를 억누르지 못한다.",
+
+                effects:{
+                    H:-10
+                },
+
+                next:"S3"
             }
 
         ]
@@ -362,9 +556,21 @@ document.addEventListener("click",()=>{
 
     if(dialogueIndex >= scene.dialogues.length){
 
-        if(scene.next){
+        if(dialogueIndex >= scene.dialogues.length){
 
-            loadScene(scene.next);
+            if(scene.choices){
+
+                showChoices(scene.choices);
+
+            }
+
+            else if(scene.next){
+
+                loadScene(scene.next);
+
+            }
+
+            return;
 
         }
 
@@ -374,6 +580,8 @@ document.addEventListener("click",()=>{
     showDialogue();
 
 });
+
+updateStats();
 
 loadScene("S1");
 
