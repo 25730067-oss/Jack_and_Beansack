@@ -43,6 +43,7 @@ body{
 }
 
 /* 상태바 */
+
 #statusBar{
     position:absolute;
     top:0;
@@ -121,6 +122,7 @@ body{
 }
 
 /* 대사창 */
+
 #dialogueBox{
     position:absolute;
 
@@ -313,11 +315,13 @@ body{
     font-size:18px;
 }
 
-/* --- [수정] 타이틀 커버 레이어 z-index를 최상위(500)로 설정하여 본 게임 UI를 확실히 덮도록 설정 --- */
+/* ========================================================
+   [추가] 첫 화면 커버 영상 및 시작 버튼 전용 CSS 스타일
+   ======================================================== */
 #coverLayer {
     position: fixed;
     inset: 0;
-    z-index: 500;
+    z-index: 999; /* 본 게임 UI보다 훨씬 높게 설정하여 완벽히 덮음 */
     background: black;
 }
 
@@ -327,7 +331,7 @@ body{
     width: 100%;
     height: 100%;
     object-fit: cover;
-    z-index: 501;
+    z-index: 1000;
 }
 
 #startBtn {
@@ -335,7 +339,7 @@ body{
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    z-index: 502;
+    z-index: 1001;
     padding: 20px 50px;
     font-size: 24px;
     font-weight: bold;
@@ -1221,7 +1225,7 @@ S4:{
 
 },
 
-S4_INFO:{
+@_INFO:{
 
     title:"조력자 : 진실",
 
@@ -2099,7 +2103,7 @@ S11_B:{
 
 };
 
-//
+// 변수 설정 및 초기화
 let currentScene = "S1A";
 
 let dialogueIndex = 0;
@@ -2242,7 +2246,7 @@ function showDialogue(){
 
 document.addEventListener("click",(e)=>{
 
-    /* 타이틀 커버 레이어가 노출 중일 때는 대사창 클릭 트리거 작동 방지 */
+    /* [커버 예외 처리] 타이틀 커버 레이어가 켜져 있을 때는 화면을 눌러도 대사가 넘어가지 않게 방지 */
     if (document.getElementById("coverLayer").style.display !== "none") {
         return;
     }
@@ -2319,18 +2323,21 @@ document.addEventListener("click",(e)=>{
 
 });
 
-/* GAME START 버튼 이벤트 핸들러 */
+/* ========================================================
+   [수정] 게임이 자동으로 즉시 켜지는 구문을 삭제하고,
+   GAME START 버튼을 누르면 커버를 치우고 게임을 실행하는 로직 구현
+   ======================================================== */
 document.getElementById("startBtn").onclick = (e) => {
-    e.stopPropagation(); // body 요소로의 클릭 버블링 완벽 방지
+    e.stopPropagation(); // body 클릭 이벤트로 번지는 현상 완벽 방지
     
     const coverLayer = document.getElementById("coverLayer");
     const coverVideo = document.getElementById("coverVideo");
     
-    // 커버 비디오 정지 및 커버 레이어 숨김
+    // 재생 중이던 첫화면 커버 영상 정지 및 레이어 숨김
     coverVideo.pause();
     coverLayer.style.display = "none";
     
-    // 비로소 본 게임 구동 및 첫 번째 씬 실행
+    // 본 게임 시스템 구동 및 스탯 바 새로고침
     updateStats();
     loadScene("S1A");
 };
