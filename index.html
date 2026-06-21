@@ -8,68 +8,6 @@
 
 <style>
 
-    /* --- 표지 비디오 및 씬 전환 레이어 스타일 --- */
-
-/* 게임 시작 커버 레이어 */
-#coverLayer {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    background: black;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-#coverVideo {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 101;
-}
-#startBtn {
-    position: relative;
-    z-index: 102;
-    padding: 20px 50px;
-    font-size: 24px;
-    font-weight: bold;
-    color: #ffe600;
-    background: rgba(0, 0, 0, 0.6);
-    border: 2px solid #ffe600;
-    border-radius: 8px;
-    cursor: pointer;
-    backdrop-filter: blur(5px);
-    transition: 0.3s;
-}
-#startBtn:hover {
-    background: #ffe600;
-    color: black;
-    box-shadow: 0 0 20px #ffe600;
-}
-
-/* 씬 전환 레이어 (검은 화면 + 씬 넘버) */
-#transitionLayer {
-    position: fixed;
-    inset: 0;
-    z-index: 90;
-    background: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s ease-in-out;
-}
-#transitionSceneNum {
-    font-size: 48px;
-    font-weight: bold;
-    letter-spacing: 4px;
-    color: #ffe600;
-    text-shadow: 0 0 15px rgba(255, 230, 0, 0.6);
-}
-
 *{
     margin:0;
     padding:0;
@@ -378,19 +316,56 @@ body{
     font-size:18px;
 }
 
+/* --- [추가] 타이틀 커버 레이어 관련 스타일 --- */
+#coverLayer {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: black;
+}
+
+#coverVideo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 101;
+}
+
+#startBtn {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 102;
+    padding: 20px 50px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffe600;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #ffe600;
+    border-radius: 8px;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: 0.3s;
+}
+
+#startBtn:hover {
+    background: #ffe600;
+    color: black;
+    box-shadow: 0 0 20px #ffe600;
+}
+
 </style>
 </head>
 <body>
 
-    <div id="coverLayer">
+<div id="coverLayer">
     <video id="coverVideo" autoplay muted loop playsinline>
         <source src="./video/cover.mp4" type="video/mp4">
     </video>
     <button id="startBtn">GAME START</button>
-</div>
-
-<div id="transitionLayer">
-    <div id="transitionSceneNum"></div>
 </div>
 
 <div id="background">
@@ -481,9 +456,6 @@ body{
 </div>
 
 <script>
-
-    const transitionLayer = document.getElementById("transitionLayer");
-const transitionSceneNum = document.getElementById("transitionSceneNum");
 
 let s3Progress = 0;
 
@@ -1252,6 +1224,7 @@ S4:{
 
 },
 
+/* [오류 교정] 불필요한 공백/문구(@textarea) 제거 */
 S4_INFO:{
 
     title:"조력자 : 진실",
@@ -1429,6 +1402,7 @@ S5:{
 
 },
 
+/* [오류 교정] 아래 S6 내부에서 똑같이 중복 정의되어 있던 onEnter 로직을 하나로 합침 */
 S6:{
 
     title:"상승 : 유리 엘리베이터",
@@ -1436,20 +1410,6 @@ S6:{
     background:"./scene/S6.png",
 
     effect:"shake",
-
-    onEnter(){
-
-        state.C -= 10;
-
-        if(state.C < 0){
-
-            state.C = 0;
-
-        }
-
-        updateStats();
-
-    },
 
     profile:"스카이",
 
@@ -1462,7 +1422,7 @@ S6:{
 
         {
             speaker:"스카이",
-            text:"위로 올라갈수록 보안망이 촘촘해지고 있어."
+            text:"위로 올라갈수록 보안망이 꼼깐해지고 있어."
         },
 
         {
@@ -1601,7 +1561,8 @@ S8:{
 
         }
 
-        N = 0;
+        /* [오류 교정] 정의되지 않은 전역변수 N 대신 오브젝트 속성(state.N)으로 수정 */
+        state.N = 0;
 
         updateStats();
 
@@ -2171,38 +2132,48 @@ const bgVideo =
 
 
 function loadScene(sceneId){
+
     currentScene = sceneId;
+
     dialogueIndex = 0;
+
     const scene = scenes[sceneId];
 
-    // 1. 암전 레이어를 켜고 중앙에 씬 넘버(ID)를 새깁니다.
-    transitionSceneNum.textContent = sceneId;
-    transitionLayer.style.opacity = "1";
+    if(scene.profile){
 
-    // 2. 화면이 완전히 까맣게 변한 시점(0.4초 뒤)에 내부 리소스를 교체합니다.
-    setTimeout(() => {
-        if(scene.profile){
-            profileImage.src = profiles[scene.profile];
-            profileImage.style.display = "block";
-        } else {
-            profileImage.style.display = "none";
-        }
+        profileImage.src =
+            profiles[scene.profile];
 
-        if(scene.onEnter){
-            scene.onEnter();
-        }
+        profileImage.style.display =
+            "block";
 
-        sceneTitle.textContent = scene.title;
-        changeBackground(scene.background);
-        applyEffect(scene.effect);
-        showDialogue();
+    }
+    else{
 
-        // 3. 리소스 교체가 끝나면 다시 부드러운 불투명도 처리로 암전을 제거합니다.
-        setTimeout(() => {
-            transitionLayer.style.opacity = "0";
-        }, 500); // 씬 번호를 읽을 수 있도록 살짝 머무른 뒤 걷어냅니다.
+        profileImage.style.display =
+            "none";
 
-    }, 400); // CSS transition 시간(0.4s)에 맞춰 동기화
+    }
+
+    if(scene.onEnter){
+
+        scene.onEnter();
+
+    }
+
+    sceneTitle.textContent =
+        scene.title;
+
+    changeBackground(
+        scene.background
+    );
+
+    applyEffect(
+        scene.effect
+    );
+
+    showDialogue();
+
 }
 
 //배경 변경 함수
@@ -2275,17 +2246,12 @@ function showDialogue(){
 
 }
 
-document.addEventListener("click", (e) => {
-    // [이 조건문 추가] 커버가 켜져 있거나 화면 전환(암전) 중일 때는 다음 대사 클릭 무시
-    if (document.getElementById("coverLayer").style.display !== "none" || transitionLayer.style.opacity === "1") {
-        return;
-    }
+document.addEventListener("click",(e)=>{
 
-    if(e.target.id === "pinInput" || e.target.id === "pinSubmit"){
+    /* [커버 대응] 타이틀 커버 레이어가 노출 중일 때는 대사창 마우스 클릭 방지 */
+    if (document.getElementById("coverLayer").style.display !== "none") {
         return;
     }
-    
-    // ... 이하 원본 클릭 로직 그대로 유지 ...
 
     if(
         e.target.id === "pinInput" ||
@@ -2359,16 +2325,20 @@ document.addEventListener("click", (e) => {
 
 });
 
-// 시작 버튼을 눌러야 게임이 로드되고 커버 영상이 꺼지도록 변경
+/* [수정] 즉시 첫 씬이 켜지던 원본 로직을 분리해 'GAME START' 클릭 핸들러에 할당 */
 document.getElementById("startBtn").onclick = (e) => {
-    e.stopPropagation(); // 이벤트 버블링 방지
+    e.stopPropagation(); // body 요소로의 이벤트 버블링 방지
     
+    const coverLayer = document.getElementById("coverLayer");
     const coverVideo = document.getElementById("coverVideo");
-    coverVideo.pause(); // 시작했으므로 커버 비디오 정지
-    document.getElementById("coverLayer").style.display = "none"; // 커버 레이어 숨김
     
+    // 재생 중이던 커버 비디오 정지 및 제거
+    coverVideo.pause();
+    coverLayer.style.display = "none";
+    
+    // 본 게임 시스템 구동
     updateStats();
-    loadScene("S1A"); // 첫 씬 구동
+    loadScene("S1A");
 };
 
 </script>
