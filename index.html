@@ -613,7 +613,9 @@ const state = {
 
     O:100,
 
-    M:1000000
+    M:1000000,
+
+    N:0
 
 };
 
@@ -1610,7 +1612,7 @@ S8_STAGE2A:{
     title:"정리 중",
     background:"./video/S8.mp4",
 
-    onEnter(){ N += 30; },
+    onEnter(){ state.N += 30; },
 
     dialogues:[
         {
@@ -1626,7 +1628,7 @@ S8_STAGE2B:{
     title:"정리 중",
     background:"./video/S8.mp4",
 
-    onEnter(){ N += 20; },
+    onEnter(){ state.N += 20; },
 
     dialogues:[
         {
@@ -1642,7 +1644,7 @@ S8_STAGE2C:{
     title:"정리 중",
     background:"./video/S8.mp4",
 
-    onEnter(){ N += 10; },
+    onEnter(){ state.N += 10; },
 
     dialogues:[
         {
@@ -1701,12 +1703,74 @@ S8_RESULT_A:{
 
     onEnter(){
 
-        N += 30;
+        state.N += 30;
 
     },
 
     condition:{
-        stat:"TEMP",
+    stat:"N",
+    operator:">=",
+    value:80,
+
+    trueScene:"S9",
+
+    falseScene:"S8"
+},
+
+    dialogues:[
+        {
+            speaker:"시스템",
+            text:"데이터 처리 완료."
+        }
+    ]
+
+},
+
+S8_RESULT_B:{
+
+    title:"정리 완료",
+
+    background:"./video/S8.mp4",
+
+    onEnter(){
+
+        state.N += 20;
+
+    },
+
+    condition:{
+        stat:"N",
+        operator:">=",
+        value:80,
+
+        trueScene:"S9",
+
+        falseScene:"S8"
+    },
+
+    dialogues:[
+        {
+            speaker:"시스템",
+            text:"데이터 처리 완료."
+        }
+    ]
+
+},
+
+S8_RESULT_C:{
+
+    title:"정리 완료",
+
+    background:"./video/S8.mp4",
+
+    onEnter(){
+
+        state.N += 10;
+
+    },
+
+    condition:{
+        stat:"N",
         operator:">=",
         value:80,
 
