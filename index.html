@@ -346,11 +346,60 @@ body{
 
 }
 
+/* 오프닝 */
 
+#introScreen{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:black;
+}
+
+#introVideo{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+#tapStart{
+    position:absolute;
+    bottom:80px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:32px;
+    color:white;
+    text-shadow:0 0 15px black;
+    display:none;
+    cursor:pointer;
+}
+
+/* 시작 전 숨김 */
+
+#statusBar,
+#uiLayer,
+#dialogueBox{
+    display:none;
+}
 
 </style>
 </head>
 <body>
+
+<div id="introScreen">
+    <video
+        id="introVideo"
+        autoplay
+        muted
+        playsinline>
+
+        <source src="./video/Cover.mp4" type="video/mp4">
+
+    </video>
+
+    <div id="tapStart">
+        탭하여 시작
+    </div>
+</div>
 
     <!-- 오프닝 영상 -->
 <div id="introScreen">
@@ -2140,14 +2189,20 @@ const bgImage =
 const bgVideo =
     document.getElementById("bgVideo");
 
+
+
+const introScreen =
+    document.getElementById("introScreen");
+
 const introVideo =
     document.getElementById("introVideo");
 
-introVideo.addEventListener("ended",()=>{
+const tapStart =
+    document.getElementById("tapStart");
 
-    document
-        .getElementById("introScreen")
-        .style.display = "none";
+function startGame(){
+
+    introScreen.style.display = "none";
 
     document
         .getElementById("statusBar")
@@ -2164,6 +2219,17 @@ introVideo.addEventListener("ended",()=>{
     updateStats();
 
     loadScene("S1A");
+}
+
+introVideo.addEventListener("ended",()=>{
+
+    tapStart.style.display = "block";
+
+});
+
+tapStart.addEventListener("click",()=>{
+
+    startGame();
 
 });
 
