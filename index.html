@@ -1674,19 +1674,133 @@ S8_STAGE3:{
     choices:[
 
         {
-            text:"정석 알고리즘",
+            text:"정석적 해제 알고리즘 사용",
+
+            next:"S8_STAGE4A"
+        },
+
+        {
+            text:"불법 플러그인 연결",
+
+            next:"S8_STAGE4B"
+        },
+
+        {
+            text:"일부 해제 포기",
+
+            next:"S8_STAGE4C"
+        }
+
+    ]
+
+},
+
+S8_STAGE4A:{
+
+    title:"정리 진행",
+
+    background:"./video/S8.mp4",
+
+    onEnter(){
+
+        state.N += 30;
+
+    },
+
+    dialogues:[
+
+        {
+            speaker:"시스템",
+            text:"해제 알고리즘 적용 완료."
+        }
+
+    ],
+
+    next:"S8_STAGE5"
+
+},
+
+S8_STAGE4B:{
+
+    title:"정리 진행",
+
+    background:"./video/S8.mp4",
+
+    onEnter(){
+
+        state.N += 20;
+
+    },
+
+    dialogues:[
+
+        {
+            speaker:"시스템",
+            text:"불법 플러그인 연결 완료."
+        }
+
+    ],
+
+    next:"S8_STAGE5"
+
+},
+
+S8_STAGE4C:{
+
+    title:"정리 진행",
+
+    background:"./video/S8.mp4",
+
+    onEnter(){
+
+        state.N += 10;
+
+    },
+
+    dialogues:[
+
+        {
+            speaker:"시스템",
+            text:"일부 데이터 생략."
+        }
+
+    ],
+
+    next:"S8_STAGE5"
+
+},
+
+S8_STAGE5:{
+
+    title:"데이터 정리 3단계",
+
+    background:"./video/S8.mp4",
+
+    dialogues:[
+
+        {
+            speaker:"시스템",
+            text:"최종 전송 방식을 선택하십시오."
+        }
+
+    ],
+
+    choices:[
+
+        {
+            text:"정보를 암호화해 외부 네트워크로 전송",
 
             next:"S8_RESULT_A"
         },
 
         {
-            text:"불법 플러그인",
+            text:"데이터를 바로 스카이에게 전송",
 
             next:"S8_RESULT_B"
         },
 
         {
-            text:"일부 포기",
+            text:"내부에 은밀히 저장",
 
             next:"S8_RESULT_C"
         }
