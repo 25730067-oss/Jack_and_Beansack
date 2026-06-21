@@ -43,7 +43,7 @@ body{
 
 }
 
-/*  상태바  */
+/* 상태바 */
 
 #statusBar{
     position:absolute;
@@ -461,10 +461,26 @@ function showPINGame(successScene, failScene){
         .getElementById("pinSubmit")
         .onclick = ()=>{
 
+            document
+                .getElementById("pinSubmit")
+                .addEventListener("click",(e)=>{
+
+                    e.stopPropagation();
+
+                });
+
             const value =
                 document
                 .getElementById("pinInput")
                 .value;
+            
+            document
+                .getElementById("pinInput")
+                .addEventListener("click",(e)=>{
+
+                    e.stopPropagation();
+
+                });
 
             if(value === currentPIN){
 
@@ -1396,6 +1412,20 @@ S6:{
         trueScene:"S7_PASS",
 
         falseScene:"S7"
+    },
+
+    onEnter(){
+
+        state.C -= 10;
+
+        if(state.C < 0){
+
+            state.C = 0;
+
+        }
+
+        updateStats();
+
     }
 
 },
@@ -2001,7 +2031,14 @@ function showDialogue(){
 
 }
 
-document.addEventListener("click",()=>{
+document.addEventListener("click",(e)=>{
+
+    if(
+        e.target.id === "pinInput" ||
+        e.target.id === "pinSubmit"
+    ){
+        return;
+    }
 
     const scene =
         scenes[currentScene];
