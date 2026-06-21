@@ -41,10 +41,9 @@ body{
 
     inset:0;
 
-}
+} dream;
 
-/* 상태바 */
-
+/* 상태바 - [수정] 처음에는 숨김 */
 #statusBar{
     position:absolute;
     top:0;
@@ -58,7 +57,7 @@ body{
 
     z-index:10;
 
-    display:flex;
+    display:none; /* 기본은 숨김, 시작 버튼 누르면 flex로 변경 */
     flex-direction:column;
     align-items:center;
 }
@@ -122,8 +121,7 @@ body{
     z-index:20;
 }
 
-/* 대사창 */
-
+/* 대사창 - [수정] 처음에는 숨김 */
 #dialogueBox{
     position:absolute;
 
@@ -144,6 +142,7 @@ body{
     padding:10px 15px;
 
     z-index:30;
+    display:none; /* 기본은 숨김 */
 }
 
 #speaker{
@@ -897,7 +896,7 @@ const scenes = {
             dialogues:[
 
                 {
-                    speaker:"커스터디언",
+                    speaker:"커스터디自动",
                     text:"중앙 데이터 탈취범 '잭' 생포 완료."
                 },
 
@@ -1224,7 +1223,6 @@ S4:{
 
 },
 
-/* [오류 교정] 불필요한 공백/문구(@textarea) 제거 */
 S4_INFO:{
 
     title:"조력자 : 진실",
@@ -1402,7 +1400,6 @@ S5:{
 
 },
 
-/* [오류 교정] 아래 S6 내부에서 똑같이 중복 정의되어 있던 onEnter 로직을 하나로 합침 */
 S6:{
 
     title:"상승 : 유리 엘리베이터",
@@ -1422,7 +1419,7 @@ S6:{
 
         {
             speaker:"스카이",
-            text:"위로 올라갈수록 보안망이 꼼깐해지고 있어."
+            text:"위로 올라갈수록 보안망이 촘촘해지고 있어."
         },
 
         {
@@ -1561,7 +1558,6 @@ S8:{
 
         }
 
-        /* [오류 교정] 정의되지 않은 전역변수 N 대신 오브젝트 속성(state.N)으로 수정 */
         state.N = 0;
 
         updateStats();
@@ -2325,16 +2321,20 @@ document.addEventListener("click",(e)=>{
 
 });
 
-/* [수정] 즉시 첫 씬이 켜지던 원본 로직을 분리해 'GAME START' 클릭 핸들러에 할당 */
+/* [핵심 수정] 즉시 게임을 로드하는 구문을 제거하고 'GAME START' 버튼을 누르면 구동되도록 정밀 재설계 */
 document.getElementById("startBtn").onclick = (e) => {
     e.stopPropagation(); // body 요소로의 이벤트 버블링 방지
     
     const coverLayer = document.getElementById("coverLayer");
     const coverVideo = document.getElementById("coverVideo");
     
-    // 재생 중이던 커버 비디오 정지 및 제거
+    // 재생 중이던 커버 비디오 정지 및 레이어 숨김 처리
     coverVideo.pause();
     coverLayer.style.display = "none";
+    
+    // 본 게임에 필요한 UI 레이어(상태바, 대사창) 노출 활성화
+    document.getElementById("statusBar").style.display = "flex";
+    document.getElementById("dialogueBox").style.display = "block";
     
     // 본 게임 시스템 구동
     updateStats();
