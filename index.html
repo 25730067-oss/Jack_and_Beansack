@@ -8,6 +8,68 @@
 
 <style>
 
+    /* --- 표지 비디오 및 씬 전환 레이어 스타일 --- */
+
+/* 게임 시작 커버 레이어 */
+#coverLayer {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: black;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+#coverVideo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 101;
+}
+#startBtn {
+    position: relative;
+    z-index: 102;
+    padding: 20px 50px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffe600;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #ffe600;
+    border-radius: 8px;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: 0.3s;
+}
+#startBtn:hover {
+    background: #ffe600;
+    color: black;
+    box-shadow: 0 0 20px #ffe600;
+}
+
+/* 씬 전환 레이어 (검은 화면 + 씬 넘버) */
+#transitionLayer {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease-in-out;
+}
+#transitionSceneNum {
+    font-size: 48px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    color: #ffe600;
+    text-shadow: 0 0 15px rgba(255, 230, 0, 0.6);
+}
+
 *{
     margin:0;
     padding:0;
@@ -320,6 +382,17 @@ body{
 </head>
 <body>
 
+    <div id="coverLayer">
+    <video id="coverVideo" autoplay muted loop playsinline>
+        <source src="./video/cover.mp4" type="video/mp4">
+    </video>
+    <button id="startBtn">GAME START</button>
+</div>
+
+<div id="transitionLayer">
+    <div id="transitionSceneNum"></div>
+</div>
+
 <div id="background">
 
     <img id="bgImage">
@@ -408,6 +481,9 @@ body{
 </div>
 
 <script>
+
+    const transitionLayer = document.getElementById("transitionLayer");
+const transitionSceneNum = document.getElementById("transitionSceneNum");
 
 let s3Progress = 0;
 
@@ -2095,48 +2171,38 @@ const bgVideo =
 
 
 function loadScene(sceneId){
-
     currentScene = sceneId;
-
     dialogueIndex = 0;
-
     const scene = scenes[sceneId];
 
-    if(scene.profile){
+    // 1. 암전 레이어를 켜고 중앙에 씬 넘버(ID)를 새깁니다.
+    transitionSceneNum.textContent = sceneId;
+    transitionLayer.style.opacity = "1";
 
-        profileImage.src =
-            profiles[scene.profile];
+    // 2. 화면이 완전히 까맣게 변한 시점(0.4초 뒤)에 내부 리소스를 교체합니다.
+    setTimeout(() => {
+        if(scene.profile){
+            profileImage.src = profiles[scene.profile];
+            profileImage.style.display = "block";
+        } else {
+            profileImage.style.display = "none";
+        }
 
-        profileImage.style.display =
-            "block";
+        if(scene.onEnter){
+            scene.onEnter();
+        }
 
-    }
-    else{
+        sceneTitle.textContent = scene.title;
+        changeBackground(scene.background);
+        applyEffect(scene.effect);
+        showDialogue();
 
-        profileImage.style.display =
-            "none";
+        // 3. 리소스 교체가 끝나면 다시 부드러운 불투명도 처리로 암전을 제거합니다.
+        setTimeout(() => {
+            transitionLayer.style.opacity = "0";
+        }, 500); // 씬 번호를 읽을 수 있도록 살짝 머무른 뒤 걷어냅니다.
 
-    }
-
-    if(scene.onEnter){
-
-        scene.onEnter();
-
-    }
-
-    sceneTitle.textContent =
-        scene.title;
-
-    changeBackground(
-        scene.background
-    );
-
-    applyEffect(
-        scene.effect
-    );
-
-    showDialogue();
-
+    }, 400); // CSS transition 시간(0.4s)에 맞춰 동기화
 }
 
 //배경 변경 함수
@@ -2209,7 +2275,17 @@ function showDialogue(){
 
 }
 
-document.addEventListener("click",(e)=>{
+document.addEventListener("click", (e) => {
+    // [이 조건문 추가] 커버가 켜져 있거나 화면 전환(암전) 중일 때는 다음 대사 클릭 무시
+    if (document.getElementById("coverLayer").style.display !== "none" || transitionLayer.style.opacity === "1") {
+        return;
+    }
+
+    if(e.target.id === "pinInput" || e.target.id === "pinSubmit"){
+        return;
+    }
+    
+    // ... 이하 원본 클릭 로직 그대로 유지 ...
 
     if(
         e.target.id === "pinInput" ||
@@ -2283,9 +2359,17 @@ document.addEventListener("click",(e)=>{
 
 });
 
-updateStats();
-
-loadScene("S1A");
+// 시작 버튼을 눌러야 게임이 로드되고 커버 영상이 꺼지도록 변경
+document.getElementById("startBtn").onclick = (e) => {
+    e.stopPropagation(); // 이벤트 버블링 방지
+    
+    const coverVideo = document.getElementById("coverVideo");
+    coverVideo.pause(); // 시작했으므로 커버 비디오 정지
+    document.getElementById("coverLayer").style.display = "none"; // 커버 레이어 숨김
+    
+    updateStats();
+    loadScene("S1A"); // 첫 씬 구동
+};
 
 </script>
 
