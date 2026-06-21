@@ -40,6 +40,7 @@ body{
     position:absolute;
 
     inset:0;
+
 }
 
 /* 상태바 */
@@ -315,58 +316,55 @@ body{
     font-size:18px;
 }
 
-/* ========================================================
-   [추가] 첫 화면 커버 영상 및 시작 버튼 전용 CSS 스타일
-   ======================================================== */
-#coverLayer {
-    position: fixed;
-    inset: 0;
-    z-index: 999; /* 본 게임 UI보다 훨씬 높게 설정하여 완벽히 덮음 */
-    background: black;
+/* 오프닝 영상 */
+
+#introScreen{
+
+    position:fixed;
+    inset:0;
+
+    z-index:9999;
+
+    background:black;
+
 }
 
-#coverVideo {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1000;
+#introVideo{
+
+    width:100%;
+    height:100%;
+
+    object-fit:cover;
+
 }
 
-#startBtn {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1001;
-    padding: 20px 50px;
-    font-size: 24px;
-    font-weight: bold;
-    color: #ffe600;
-    background: rgba(0, 0, 0, 0.6);
-    border: 2px solid #ffe600;
-    border-radius: 8px;
-    cursor: pointer;
-    backdrop-filter: blur(5px);
-    transition: 0.3s;
+#statusBar,
+#uiLayer,
+#dialogueBox{
+
+    display:none;
+
 }
 
-#startBtn:hover {
-    background: #ffe600;
-    color: black;
-    box-shadow: 0 0 20px #ffe600;
-}
+
 
 </style>
 </head>
 <body>
 
-<div id="coverLayer">
-    <video id="coverVideo" autoplay muted loop playsinline>
-        <source src="./video/cover.mp4" type="video/mp4">
+    <!-- 오프닝 영상 -->
+<div id="introScreen">
+
+    <video
+        id="introVideo"
+        autoplay
+        muted
+        playsinline>
+
+        <source src="./video/Cover.mp4" type="video/mp4">
+
     </video>
-    <button id="startBtn">GAME START</button>
+
 </div>
 
 <div id="background">
@@ -1225,7 +1223,7 @@ S4:{
 
 },
 
-@_INFO:{
+S4_INFO:{
 
     title:"조력자 : 진실",
 
@@ -1410,6 +1408,20 @@ S6:{
 
     effect:"shake",
 
+    onEnter(){
+
+        state.C -= 10;
+
+        if(state.C < 0){
+
+            state.C = 0;
+
+        }
+
+        updateStats();
+
+    },
+
     profile:"스카이",
 
     dialogues:[
@@ -1560,7 +1572,7 @@ S8:{
 
         }
 
-        state.N = 0;
+        N = 0;
 
         updateStats();
 
@@ -2103,7 +2115,7 @@ S11_B:{
 
 };
 
-// 변수 설정 및 초기화
+//
 let currentScene = "S1A";
 
 let dialogueIndex = 0;
@@ -2127,6 +2139,33 @@ const bgImage =
 
 const bgVideo =
     document.getElementById("bgVideo");
+
+const introVideo =
+    document.getElementById("introVideo");
+
+introVideo.addEventListener("ended",()=>{
+
+    document
+        .getElementById("introScreen")
+        .style.display = "none";
+
+    document
+        .getElementById("statusBar")
+        .style.display = "flex";
+
+    document
+        .getElementById("uiLayer")
+        .style.display = "flex";
+
+    document
+        .getElementById("dialogueBox")
+        .style.display = "block";
+
+    updateStats();
+
+    loadScene("S1A");
+
+});
 
 
 function loadScene(sceneId){
@@ -2246,11 +2285,6 @@ function showDialogue(){
 
 document.addEventListener("click",(e)=>{
 
-    /* [커버 예외 처리] 타이틀 커버 레이어가 켜져 있을 때는 화면을 눌러도 대사가 넘어가지 않게 방지 */
-    if (document.getElementById("coverLayer").style.display !== "none") {
-        return;
-    }
-
     if(
         e.target.id === "pinInput" ||
         e.target.id === "pinSubmit"
@@ -2322,25 +2356,6 @@ document.addEventListener("click",(e)=>{
     showDialogue();
 
 });
-
-/* ========================================================
-   [수정] 게임이 자동으로 즉시 켜지는 구문을 삭제하고,
-   GAME START 버튼을 누르면 커버를 치우고 게임을 실행하는 로직 구현
-   ======================================================== */
-document.getElementById("startBtn").onclick = (e) => {
-    e.stopPropagation(); // body 클릭 이벤트로 번지는 현상 완벽 방지
-    
-    const coverLayer = document.getElementById("coverLayer");
-    const coverVideo = document.getElementById("coverVideo");
-    
-    // 재생 중이던 첫화면 커버 영상 정지 및 레이어 숨김
-    coverVideo.pause();
-    coverLayer.style.display = "none";
-    
-    // 본 게임 시스템 구동 및 스탯 바 새로고침
-    updateStats();
-    loadScene("S1A");
-};
 
 </script>
 
